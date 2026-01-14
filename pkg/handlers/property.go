@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"project-zero/internal/models"
 	"project-zero/pkg/database"
 	"strconv"
@@ -10,6 +12,20 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
+
+// Constants untuk image validation
+const (
+	MaxFileSize     = 5 * 1024 * 1024 // 5MB
+	MaxFileSizeMB   = 5
+)
+
+var AllowedImageTypes = map[string]bool{
+	".jpg":  true,
+	".jpeg": true,
+	".png":  true,
+	".gif":  true,
+	".webp": true,
+}
 
 type PropertyHandler struct {
 	repo *database.PropertyRepository
@@ -134,11 +150,17 @@ func (h *PropertyHandler) DeleteProperty(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Listing berhasil dihapus"})
 }
 
-// UploadFile menghandle upload file
+// UploadFile menghandle upload file dengan validasi
 func UploadFile(c *gin.Context) {
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Gagal ambil file"})
+		return
+	}
+
+	// Validate file
+	if err := validateImageFile(file); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -154,4 +176,36 @@ func UploadFile(c *gin.Context) {
 
 	// Return URL path untuk database
 	c.JSON(http.StatusOK, gin.H{"photo_path": "/uploads/" + filename})
+}
+
+// validateImageFile memvalidasi file image berdasarkan tipe dan ukuran
+func validateImageFile(file *multipart.FileHeader) error {
+	// Validasi ukuran file
+	if file.Size > MaxFileSize {
+		return &ValidationError{
+			Code:    "FILE_TOO_LARGE",
+			Message: "Ukuran file terlalu besar, maksimal " + strconv.Itoa(MaxFileSizeMB) + "MB",
+		}
+	}
+
+	// Validasi tipe file (extension)
+	ext := filepath.Ext(file.Filename)
+	if !AllowedImageTypes[ext] {
+		return &ValidationError{
+			Code:    "INVALID_FILE_TYPE",
+			Message: "Tipe file tidak didukung, gunakan: jpg, jpeg, png, gif, webp",
+		}
+	}
+
+	return nil
+}
+
+// ValidationError custom error untuk validasi
+type ValidationError struct {
+	Code    string
+	Message string
+}
+
+func (e *ValidationError) Error() string {
+	return e.Message
 }
