@@ -5,20 +5,85 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Property Management System - Project Zero</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="p-4 md:p-10 font-sans">
-    <div class="max-w-7xl mx-auto">
-        <div class="mb-12 text-center animate-in">
-            <div class="mb-4">
-                <span class="icon-accent">🏠</span>
+<body class="font-sans flex flex-col min-h-screen">
+    <header class="main-header w-full">
+        <div class="max-w-7xl mx-auto px-4 md:px-10 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">⚡</span>
+                <span class="text-2xl font-bold logo-text">Project Zero</span>
             </div>
-            <h1 class="section-title mb-2">Property Management System</h1>
+
+            <nav class="hidden md:flex gap-1" aria-label="Main Navigation">
+                <a href="#about" class="nav-link">Dashboard</a>
+                <a href="#projects" class="nav-link">Listing Properti</a>
+                <a href="#organization" class="nav-link">Transaksi</a>
+                <a href="#contact" class="nav-link">Analytics</a>
+            </nav>
+
+            <div class="md:hidden flex items-center gap-3">
+                <button id="mobile-menu-btn" class="p-2 rounded-md text-slate-300 bg-transparent focus:outline-none" aria-expanded="false" aria-controls="mobile-menu">
+                    
+                    <svg id="icon-open" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                    
+                    <svg id="icon-close" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <div class="hidden md:flex items-center gap-4">
+                <button class="text-slate-400 hover:text-white transition-colors">
+                    🔔
+                </button>
+                <div class="flex items-center gap-3 pl-4 border-l border-slate-700">
+                    <div class="text-right hidden lg:block">
+                        <div class="text-sm font-bold text-white">Sebastian Obert</div>
+                        <div class="text-xs text-slate-400">Admin</div>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 p-[2px]">
+                        <div class="w-full h-full rounded-full bg-slate-900 flex items-center justify-center border-2 border-transparent">
+                            <span class="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-tr from-blue-400 to-purple-400">SO</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="md:hidden absolute top-full left-0 w-full bg-slate-900/95 border-b border-slate-800 shadow-2xl overflow-hidden max-h-0 opacity-0 hidden transition-all duration-300 ease-in-out">
+            <div class="p-4 flex flex-col items-center gap-4">
+                <a href="#about" class="nav-link w-full text-center">Dashboard</a>
+                <a href="#projects" class="nav-link w-full text-center">Listing Properti</a>
+                <a href="#organization" class="nav-link w-full text-center">Transaksi</a>
+                <a href="#contact" class="nav-link w-full text-center">Analytics</a>
+
+                <div class="w-full border-t border-slate-800 mt-2 pt-4 flex items-center justify-between px-2">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 p-[2px]">
+                            <div class="w-full h-full rounded-full bg-slate-900 flex items-center justify-center border-2 border-transparent text-sm font-bold text-transparent bg-clip-text bg-gradient-to-tr from-blue-400 to-purple-400">SO</div>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-sm font-bold text-white">Sebastian Obert</div>
+                            <div class="text-xs text-slate-400">Admin</div>
+                        </div>
+                    </div>
+                    <button class="nav-link">🔔</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow p-4 md:p-10">
+        <div class="max-w-7xl mx-auto">
+            <div id="about" class="mb-12 text-center animate-in pt-4">
+                <div class="mb-4">
+                    <span class="icon-accent">🏠</span>
+                </div>
+                <h1 class="section-title mb-2">Property Management System</h1>
             <p class="text-lg font-light">Kelola inventori properti WTS & WTR dengan interface yang elegan dan modern</p>
         </div>
         
-        <div class="card-glow p-8 rounded-3xl mb-12 animate-in" style="animation-delay: 0.1s;">
+        <div id="organization" class="card-glow p-8 rounded-3xl mb-12 animate-in" style="animation-delay: 0.1s;">
             <div class="flex items-center mb-8">
                 <span class="icon-accent">📝</span>
                 <h2 class="text-2xl font-bold text-gray-900">Input Detail Properti</h2>
@@ -91,14 +156,13 @@
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 animate-in" style="animation-delay: 0.2s;">
             <div>
                 <h2 class="section-title">📋 Daftar Inventori</h2>
-                <p id="counter" class="text-sm text-gray-600 font-medium mt-2">Memuat data...</p>
+                <p id="counter" class="text-sm text-gray-200 font-medium mt-2">Memuat data...</p>
             </div>
             <div class="w-full md:w-80">
                 <input id="search-input" type="text" placeholder="🔍 Cari properti..." class="w-full search-bar p-3 rounded-xl focus:outline-none" oninput="searchData()">
             </div>
         </div>
 
-        <!-- Filter & Pagination Section -->
         <div class="card-glow p-6 rounded-2xl mb-6 animate-in" style="animation-delay: 0.2s;">
             <h3 class="text-lg font-bold text-gray-900 mb-4">🔍 Filter & Urutkan</h3>
             <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
@@ -148,7 +212,7 @@
             </div>
         </div>
 
-        <div class="card-glow rounded-3xl shadow-2xl overflow-hidden animate-in" style="animation-delay: 0.3s;">
+        <div id="projects" class="card-glow rounded-3xl shadow-2xl overflow-hidden animate-in" style="animation-delay: 0.3s;">
             <table class="w-full text-left">
                 <thead class="table-header">
                     <tr>
@@ -164,12 +228,24 @@
             </table>
         </div>
 
-        <!-- Pagination -->
         <div id="pagination-container" class="flex justify-center items-center gap-2 mt-6 flex-wrap">
         </div>
     </div>
+    </main>
 
-    <!-- Edit Modal -->
+    <footer id="contact" class="main-footer py-12 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 md:px-10">      
+            <div class="border-t border-slate-800/50 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-slate-500">
+                <p>&copy; 2026 Project Zero Indonesia. All rights reserved.</p>
+                <div class="flex gap-6 mt-4 md:mt-0">
+                    <a href="#" class="hover:text-blue-400 transition-colors">Privacy Policy</a>
+                    <a href="#" class="hover:text-blue-400 transition-colors">Terms of Service</a>
+                    <a href="#" class="hover:text-blue-400 transition-colors">Sitemap</a>
+                </div>
+            </div>
+        </div>
+    </footer>   
+
     <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div class="card-glow p-8 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-6">
@@ -381,14 +457,12 @@
                     </tr>
                 `).join('');
 
-                // Display pagination
                 displayPagination(json.pagination);
             } catch (e) {
                 console.error("Gagal load data", e);
             }
         }
 
-        // Display pagination buttons
         function displayPagination(pagination) {
             const container = document.getElementById('pagination-container');
             if (!pagination || pagination.total_pages <= 1) {
@@ -398,12 +472,10 @@
 
             let html = '';
 
-            // Previous button
             if (pagination.page > 1) {
                 html += `<button onclick="loadData(${pagination.page - 1})" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">← Prev</button>`;
             }
 
-            // Page numbers
             for (let i = 1; i <= pagination.total_pages; i++) {
                 if (i === pagination.page) {
                     html += `<button class="px-4 py-2 bg-blue-600 text-white rounded font-bold">${i}</button>`;
@@ -414,7 +486,6 @@
                 }
             }
 
-            // Next button
             if (pagination.page < pagination.total_pages) {
                 html += `<button onclick="loadData(${pagination.page + 1})" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Next →</button>`;
             }
@@ -422,12 +493,10 @@
             container.innerHTML = html;
         }
 
-        // Apply filters
         function applyFilters() {
             loadData(1);
         }
 
-        // Clear filters
         function clearFilters() {
             document.getElementById('filter-minPrice').value = '';
             document.getElementById('filter-maxPrice').value = '';
@@ -438,12 +507,9 @@
             loadData(1);
         }
 
-        // Simpan Data (Input)
         async function simpanRumah() {
-            // Mapping field sesuai struct Golang 
             const priceRaw = document.getElementById('price-raw').value || document.getElementById('price').value.replace(/\D/g, '');
             
-            // Upload foto dulu
             const photoUploaded = await uploadPhoto();
             if (!photoUploaded && document.getElementById('photo').files && document.getElementById('photo').files[0]) {
                 return; 
@@ -473,7 +539,6 @@
                 body: JSON.stringify(data)
             });
             
-            // Clear input
             document.getElementById('title').value = "";
             document.getElementById('price').value = "";
             document.getElementById('price-raw').value = "";
@@ -482,10 +547,9 @@
             document.getElementById('photo-preview').classList.add('hidden');
             currentPhotoPath = '';
             
-            loadData(currentPage); // Refresh list
+            loadData(currentPage); 
         }
 
-        // Hapus Data
         async function hapusRumah(id) {
             if(confirm('Yakin ingin menghapus listing ini?')) {
                 await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
@@ -493,7 +557,6 @@
             }
         }
 
-        // Search Data (filter sederhana di frontend)
         async function searchData() {
             const keyword = document.getElementById('search-input').value.toLowerCase();
             const rows = document.querySelectorAll('#tabel-rumah tr');
@@ -504,14 +567,12 @@
             });
         }
 
-        // Edit functionality
         let currentEditId = null;
         let currentEditPhotoPath = '';
 
         async function editRumah(id) {
             try {
                 console.log('Fetching property data for ID:', id);
-                // Fetch property data
                 const res = await fetch(`${API_URL}/${id}`);
                 console.log('Response status:', res.status);
                 
@@ -531,7 +592,6 @@
                 currentEditId = id;
                 currentEditPhotoPath = property.photo_path || '';
 
-                // Populate form
                 document.getElementById('edit-title').value = property.title || '';
                 document.getElementById('edit-price').value = new Intl.NumberFormat('id-ID').format(property.price || 0);
                 document.getElementById('edit-price-raw').value = property.price || 0;
@@ -543,7 +603,6 @@
                 document.getElementById('edit-certificate').value = property.certificate || 'SHM';
                 document.getElementById('edit-address').value = property.address || '';
 
-                // Show existing photo
                 if (property.photo_path) {
                     document.getElementById('edit-preview-img').src = property.photo_path;
                     document.getElementById('edit-photo-preview').classList.remove('hidden');
@@ -551,10 +610,8 @@
                     document.getElementById('edit-photo-preview').classList.add('hidden');
                 }
 
-                // Reset file input
                 document.getElementById('edit-photo').value = '';
 
-                // Show modal
                 document.getElementById('edit-modal').classList.remove('hidden');
                 console.log('Edit modal opened successfully');
             } catch (e) {
@@ -574,7 +631,6 @@
 
             const priceRaw = document.getElementById('edit-price-raw').value;
 
-            // Upload foto baru jika ada
             const photoInput = document.getElementById('edit-photo');
             if (photoInput.files && photoInput.files[0]) {
                 const formData = new FormData();
@@ -622,7 +678,7 @@
                 });
 
                 closeEditModal();
-                loadData(currentPage); // Refresh list
+                loadData(currentPage); 
                 alert('Listing berhasil diupdate!');
             } catch (e) {
                 console.error("Gagal update listing", e);
@@ -630,8 +686,61 @@
             }
         }
 
-        // Jalankan saat load pertama kali
         loadData(1);
+    </script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const btn = document.getElementById('mobile-menu-btn');
+        const menu = document.getElementById('mobile-menu');
+        const iconOpen = document.getElementById('icon-open');
+        const iconClose = document.getElementById('icon-close');
+
+        if (!btn || !menu) return;
+
+        function openMenu() {
+            menu.classList.remove('hidden', 'max-h-0', 'opacity-0');
+            menu.classList.add('max-h-96', 'opacity-100');
+            btn.setAttribute('aria-expanded', 'true');
+            if (iconOpen) iconOpen.classList.add('hidden');
+            if (iconClose) iconClose.classList.remove('hidden');
+        }
+
+        function closeMenu() {
+            menu.classList.remove('max-h-96', 'opacity-100');
+            menu.classList.add('max-h-0', 'opacity-0');
+            setTimeout(() => menu.classList.add('hidden'), 300);
+            btn.setAttribute('aria-expanded', 'false');
+            if (iconOpen) iconOpen.classList.remove('hidden');
+            if (iconClose) iconClose.classList.add('hidden');
+        }
+
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            const expanded = btn.getAttribute('aria-expanded') === 'true';
+            if (expanded) closeMenu(); else openMenu();
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!menu.contains(e.target) && !btn.contains(e.target)) {
+                if (btn.getAttribute('aria-expanded') === 'true') closeMenu();
+            }
+        });
+
+        menu.addEventListener('click', function (e) { e.stopPropagation(); });
+
+        const navLinks = document.querySelectorAll('a.nav-link[href^="#"]');
+        navLinks.forEach(l => {
+            l.addEventListener('click', function (ev) {
+                const href = this.getAttribute('href');
+                if (!href || href === '#') return;
+                ev.preventDefault();
+                const target = document.querySelector(href);
+                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (btn.getAttribute('aria-expanded') === 'true') closeMenu();
+            });
+        });
+    });
     </script>
 </body>
 </html>
