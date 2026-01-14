@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"project-zero/internal/models"
+	"project-zero/pkg/database"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -15,6 +17,7 @@ import (
 )
 
 var db *gorm.DB
+var propertyRepo *database.PropertyRepository
 
 func initDB() {
 	// Ambil config dari .env
@@ -30,6 +33,9 @@ func initDB() {
 
 	// Buat/update tabel otomatis
 	db.AutoMigrate(&models.Property{})
+
+	// Initialize repository
+	propertyRepo = database.NewPropertyRepository(db)
 
 	// Buat folder untuk upload foto jika belum ada
 	os.MkdirAll("./uploads", os.ModePerm)
@@ -96,11 +102,11 @@ func main() {
 			return
 		}
 
-		result := db.Create(&input)
-		if result.Error != nil {
+		err := propertyRepo.CreateProperty(&input)
+		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error":   "Gagal menyimpan data",
-				"details": result.Error.Error(),
+				"details": err.Error(),
 			})
 			return
 		}
@@ -110,17 +116,36 @@ func main() {
 
 	// 2. Read All: Ambil semua list rumah
 	r.GET("/properties", func(c *gin.Context) {
-		var listings []models.Property
-		db.Find(&listings)
-		c.JSON(http.StatusOK, gin.H{"data": listings})
+		properties, err := propertyRepo.GetAllProperties()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "Gagal mengambil data",
+				"details": err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": properties})
 	})
 
 	// 3. Read One: Cari rumah spesifik pake ID
 	r.GET("/properties/:id", func(c *gin.Context) {
-		var property models.Property
-		id := c.Param("id")
-		if err := db.First(&property, id).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Data gak ketemu"})
+		idStr := c.Param("id")
+		id, err := strconv.ParseUint(idStr, 10, 32)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ID tidak valid"})
+			return
+		}
+
+		property, err := propertyRepo.GetPropertyByID(uint(id))
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Data gak ketemu"})
+			} else {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error":   "Gagal mengambil data",
+					"details": err.Error(),
+				})
+			}
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"data": property})
@@ -128,30 +153,53 @@ func main() {
 
 	// 4. Update: Edit data rumah
 	r.PUT("/properties/:id", func(c *gin.Context) {
-		var property models.Property
-		id := c.Param("id")
-		if err := db.First(&property, id).Error; err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Data gak ketemu"})
+		idStr := c.Param("id")
+		id, err := strconv.ParseUint(idStr, 10, 32)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ID tidak valid"})
 			return
 		}
 
 		var input models.Property
 		if err := c.ShouldBindJSON(&input); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "Validasi gagal",
+				"details": err.Error(),
+			})
 			return
 		}
-		db.Model(&property).Updates(input)
 
-		// Fetch updated data to return
-		db.First(&property, id)
+		property, err := propertyRepo.UpdateProperty(uint(id), &input)
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Data gak ketemu"})
+			} else {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error":   "Gagal mengupdate data",
+					"details": err.Error(),
+				})
+			}
+			return
+		}
+
 		c.JSON(http.StatusOK, gin.H{"data": property})
 	})
 
 	// 5. Delete: Hapus listing
 	r.DELETE("/properties/:id", func(c *gin.Context) {
-		id := c.Param("id")
-		if err := db.Delete(&models.Property{}, id).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus"})
+		idStr := c.Param("id")
+		id, err := strconv.ParseUint(idStr, 10, 32)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ID tidak valid"})
+			return
+		}
+
+		err = propertyRepo.DeleteProperty(uint(id))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "Gagal menghapus data",
+				"details": err.Error(),
+			})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "Listing berhasil dihapus"})
