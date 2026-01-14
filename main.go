@@ -89,11 +89,23 @@ func main() {
 	r.POST("/properties", func(c *gin.Context) {
 		var input models.Property
 		if err := c.ShouldBindJSON(&input); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "Validasi gagal",
+				"details": err.Error(),
+			})
 			return
 		}
-		db.Create(&input)
-		c.JSON(http.StatusOK, gin.H{"data": input})
+
+		result := db.Create(&input)
+		if result.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "Gagal menyimpan data",
+				"details": result.Error.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusCreated, gin.H{"data": input})
 	})
 
 	// 2. Read All: Ambil semua list rumah
