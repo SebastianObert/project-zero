@@ -98,6 +98,56 @@
             </div>
         </div>
 
+        <!-- Filter & Pagination Section -->
+        <div class="card-glow p-6 rounded-2xl mb-6 animate-in" style="animation-delay: 0.2s;">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">🔍 Filter & Urutkan</h3>
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-600 mb-2">Harga Min</label>
+                    <input id="filter-minPrice" type="number" placeholder="100000000" class="w-full input-modern p-2 rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-600 mb-2">Harga Max</label>
+                    <input id="filter-maxPrice" type="number" placeholder="500000000" class="w-full input-modern p-2 rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-600 mb-2">Tipe</label>
+                    <select id="filter-type" class="w-full input-modern p-2 rounded-lg text-sm cursor-pointer">
+                        <option value="">Semua Tipe</option>
+                        <option value="WTS">DIJUAL</option>
+                        <option value="WTR">DISEWA</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-600 mb-2">Kamar</label>
+                    <input id="filter-bedrooms" type="number" placeholder="0" class="w-full input-modern p-2 rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-600 mb-2">Urutkan</label>
+                    <select id="sort-by" class="w-full input-modern p-2 rounded-lg text-sm cursor-pointer">
+                        <option value="created_at">Terbaru</option>
+                        <option value="price">Harga</option>
+                        <option value="title">Judul</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-600 mb-2">Urutan</label>
+                    <select id="sort-order" class="w-full input-modern p-2 rounded-lg text-sm cursor-pointer">
+                        <option value="desc">Menurun</option>
+                        <option value="asc">Naik</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="applyFilters()" class="flex-1 btn-modern text-white font-bold py-2 rounded-lg text-sm transition-all">
+                    🔍 Terapkan Filter
+                </button>
+                <button onclick="clearFilters()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 rounded-lg text-sm transition-all">
+                    ↻ Reset
+                </button>
+            </div>
+        </div>
+
         <div class="card-glow rounded-3xl shadow-2xl overflow-hidden animate-in" style="animation-delay: 0.3s;">
             <table class="w-full text-left">
                 <thead class="table-header">
@@ -112,6 +162,10 @@
                 <tbody id="tabel-rumah" class="divide-y divide-gray-100">
                 </tbody>
             </table>
+        </div>
+
+        <!-- Pagination -->
+        <div id="pagination-container" class="flex justify-center items-center gap-2 mt-6 flex-wrap">
         </div>
     </div>
 
@@ -195,6 +249,8 @@
     <script>
         const API_URL = 'http://localhost:8080/properties';
         let currentPhotoPath = '';
+        let currentPage = 1;
+        let currentFilters = {};
 
         // Preview foto sebelum upload
         function previewPhoto(input, isEdit = false) {
@@ -213,7 +269,7 @@
             }
         }
 
-        // Format currency dengan pemisah ribuan
+        // Format currency, pemisah ribuan
         function formatCurrency(input) {
             let value = input.value.replace(/\D/g, '');
             let formatted = new Intl.NumberFormat('id-ID').format(value);
@@ -254,17 +310,45 @@
             }
         }
 
-        // Load Data (Output)
-        async function loadData() {
+        // Load Data dengan pagination dan filter
+        async function loadData(page = 1) {
+            currentPage = page;
             try {
-                const res = await fetch(API_URL);
+                // Build query parameters
+                let query = `page=${page}&limit=10&sort_by=${document.getElementById('sort-by').value || 'created_at'}&sort_order=${document.getElementById('sort-order').value || 'desc'}`;
+                
+                const minPrice = document.getElementById('filter-minPrice').value;
+                if (minPrice) query += `&min_price=${minPrice}`;
+                
+                const maxPrice = document.getElementById('filter-maxPrice').value;
+                if (maxPrice) query += `&max_price=${maxPrice}`;
+                
+                const type = document.getElementById('filter-type').value;
+                if (type) query += `&listing_type=${type}`;
+                
+                const bedrooms = document.getElementById('filter-bedrooms').value;
+                if (bedrooms) query += `&bedrooms=${bedrooms}`;
+
+                console.log('API URL:', `${API_URL}?${query}`);
+
+                const res = await fetch(`${API_URL}?${query}`);
                 const json = await res.json();
+                
+                console.log('Response:', json);
+                
                 const tabel = document.getElementById('tabel-rumah');
                 const counter = document.getElementById('counter');
                 
-                counter.innerText = `Total: ${json.data ? json.data.length : 0} Listing`;
+                // Handle response dengan pagination
+                if (json.pagination) {
+                    counter.innerText = `Total: ${json.pagination.total} Listing | Halaman ${json.pagination.page} dari ${json.pagination.total_pages}`;
+                } else {
+                    counter.innerText = `Total: ${json.data ? json.data.length : 0} Listing`;
+                }
                 
-                tabel.innerHTML = json.data.map(r => `
+                const data = json.data || [];
+                
+                tabel.innerHTML = data.map(r => `
                     <tr class="table-row-hover">
                         <td class="p-6">
                             ${r.photo_path ? `<img src="${r.photo_path}" alt="Foto" class="w-20 h-20 rounded-lg object-cover mb-2 border border-gray-200">` : '<div class="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">No Foto</div>'}
@@ -296,20 +380,73 @@
                         </td>
                     </tr>
                 `).join('');
+
+                // Display pagination
+                displayPagination(json.pagination);
             } catch (e) {
                 console.error("Gagal load data", e);
             }
         }
 
+        // Display pagination buttons
+        function displayPagination(pagination) {
+            const container = document.getElementById('pagination-container');
+            if (!pagination || pagination.total_pages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+
+            // Previous button
+            if (pagination.page > 1) {
+                html += `<button onclick="loadData(${pagination.page - 1})" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">← Prev</button>`;
+            }
+
+            // Page numbers
+            for (let i = 1; i <= pagination.total_pages; i++) {
+                if (i === pagination.page) {
+                    html += `<button class="px-4 py-2 bg-blue-600 text-white rounded font-bold">${i}</button>`;
+                } else if (i <= 3 || i > pagination.total_pages - 2 || Math.abs(i - pagination.page) <= 1) {
+                    html += `<button onclick="loadData(${i})" class="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">${i}</button>`;
+                } else if (i === 4) {
+                    html += `<span class="px-2">...</span>`;
+                }
+            }
+
+            // Next button
+            if (pagination.page < pagination.total_pages) {
+                html += `<button onclick="loadData(${pagination.page + 1})" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Next →</button>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        // Apply filters
+        function applyFilters() {
+            loadData(1);
+        }
+
+        // Clear filters
+        function clearFilters() {
+            document.getElementById('filter-minPrice').value = '';
+            document.getElementById('filter-maxPrice').value = '';
+            document.getElementById('filter-type').value = '';
+            document.getElementById('filter-bedrooms').value = '';
+            document.getElementById('sort-by').value = 'created_at';
+            document.getElementById('sort-order').value = 'desc';
+            loadData(1);
+        }
+
         // Simpan Data (Input)
         async function simpanRumah() {
-            // Mapping field sesuai struct Golang kita
+            // Mapping field sesuai struct Golang 
             const priceRaw = document.getElementById('price-raw').value || document.getElementById('price').value.replace(/\D/g, '');
             
             // Upload foto dulu
             const photoUploaded = await uploadPhoto();
             if (!photoUploaded && document.getElementById('photo').files && document.getElementById('photo').files[0]) {
-                return; // Jika ada file tapi gagal upload, hentikan
+                return; 
             }
             
             const data = {
@@ -345,14 +482,14 @@
             document.getElementById('photo-preview').classList.add('hidden');
             currentPhotoPath = '';
             
-            loadData(); // Refresh list
+            loadData(currentPage); // Refresh list
         }
 
         // Hapus Data
         async function hapusRumah(id) {
             if(confirm('Yakin ingin menghapus listing ini?')) {
                 await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-                loadData();
+                loadData(currentPage);
             }
         }
 
@@ -485,7 +622,7 @@
                 });
 
                 closeEditModal();
-                loadData(); // Refresh list
+                loadData(currentPage); // Refresh list
                 alert('Listing berhasil diupdate!');
             } catch (e) {
                 console.error("Gagal update listing", e);
@@ -494,7 +631,7 @@
         }
 
         // Jalankan saat load pertama kali
-        loadData();
+        loadData(1);
     </script>
 </body>
 </html>
