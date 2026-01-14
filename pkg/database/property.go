@@ -2,6 +2,7 @@ package database
 
 import (
 	"project-zero/internal/models"
+	"project-zero/pkg/utils"
 
 	"gorm.io/gorm"
 )
@@ -59,4 +60,56 @@ func (r *PropertyRepository) UpdateProperty(id uint, updates *models.Property) (
 func (r *PropertyRepository) DeleteProperty(id uint) error {
 	result := r.db.Delete(&models.Property{}, id)
 	return result.Error
+}
+
+// GetPropertiesWithFilters mengambil properties dengan pagination, filtering, dan sorting
+func (r *PropertyRepository) GetPropertiesWithFilters(params utils.QueryParams) ([]models.Property, int64, error) {
+	var properties []models.Property
+	var total int64
+
+	query := r.db
+
+	// Apply filters
+	if params.MinPrice > 0 {
+		query = query.Where("price >= ?", params.MinPrice)
+	}
+	if params.MaxPrice > 0 {
+		query = query.Where("price <= ?", params.MaxPrice)
+	}
+	if params.ListingType != "" {
+		query = query.Where("listing_type = ?", params.ListingType)
+	}
+	if params.Bedrooms > 0 {
+		query = query.Where("bedrooms = ?", params.Bedrooms)
+	}
+	if params.Bathrooms > 0 {
+		query = query.Where("bathrooms = ?", params.Bathrooms)
+	}
+	if params.Certificate != "" {
+		query = query.Where("certificate = ?", params.Certificate)
+	}
+	if params.Location != "" {
+		// Use ILIKE for case-insensitive search
+		query = query.Where("address ILIKE ?", "%"+params.Location+"%")
+	}
+	if params.Title != "" {
+		query = query.Where("title ILIKE ?", "%"+params.Title+"%")
+	}
+
+	// Get total count BEFORE pagination
+	countResult := query.Model(&models.Property{}).Count(&total)
+	if countResult.Error != nil {
+		return nil, 0, countResult.Error
+	}
+
+	// Apply sorting
+	sortColumn := params.SortBy
+	sortOrder := params.SortOrder
+	query = query.Order(sortColumn + " " + sortOrder)
+
+	// Apply pagination
+	offset := utils.CalculateOffset(params.Page, params.Limit)
+	result := query.Offset(offset).Limit(params.Limit).Find(&properties)
+
+	return properties, total, result.Error
 }

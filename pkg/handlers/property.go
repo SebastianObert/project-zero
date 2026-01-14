@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"project-zero/internal/models"
 	"project-zero/pkg/database"
+	"project-zero/pkg/utils"
 	"strconv"
 	"time"
 
@@ -15,8 +16,8 @@ import (
 
 // Constants untuk image validation
 const (
-	MaxFileSize     = 5 * 1024 * 1024 // 5MB
-	MaxFileSizeMB   = 5
+	MaxFileSize   = 5 * 1024 * 1024 // 5MB
+	MaxFileSizeMB = 5
 )
 
 var AllowedImageTypes = map[string]bool{
@@ -59,9 +60,13 @@ func (h *PropertyHandler) CreateProperty(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"data": input})
 }
 
-// GetAllProperties mengambil semua property
+// GetAllProperties mengambil semua property dengan pagination dan filtering
 func (h *PropertyHandler) GetAllProperties(c *gin.Context) {
-	properties, err := h.repo.GetAllProperties()
+	// Parse query parameters
+	params := utils.ParseQueryParams(c)
+
+	// Fetch properties dari database
+	properties, total, err := h.repo.GetPropertiesWithFilters(params)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Gagal mengambil data",
@@ -69,7 +74,28 @@ func (h *PropertyHandler) GetAllProperties(c *gin.Context) {
 		})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": properties})
+
+	// Build pagination metadata
+	pagination := utils.PaginationMetadata{
+		Page:       params.Page,
+		Limit:      params.Limit,
+		Total:      total,
+		TotalPages: utils.CalculateTotalPages(total, params.Limit),
+	}
+
+	// Build filters map untuk response
+	filters := utils.BuildFiltersMap(params)
+
+	// Return paginated response
+	response := utils.PaginatedResponse{
+		Data:       properties,
+		Pagination: pagination,
+	}
+	if len(filters) > 0 {
+		response.Filters = filters
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // GetPropertyByID mengambil property berdasarkan ID
