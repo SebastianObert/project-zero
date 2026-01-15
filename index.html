@@ -107,11 +107,17 @@
                     </select>
                 </div>
 
+                <div class="md:col-span-4">
+                    <label class="block text-xs font-bold uppercase text-gray-600 mb-2 tracking-wider">Deskripsi Properti (Opsional)</label>
+                    <textarea id="description" placeholder="Deskripsi lengkap properti..." class="w-full input-modern p-3 rounded-xl" rows="3"></textarea>
+                </div>
+
                 <div class="md:col-span-2">
                     <label class="block text-xs font-bold uppercase text-gray-600 mb-2 tracking-wider">📸 Foto Properti</label>
                     <input id="photo" type="file" accept="image/*" class="w-full input-modern p-3 rounded-xl cursor-pointer" onchange="previewPhoto(this)">
-                    <div id="photo-preview" class="mt-2 hidden">
+                    <div id="photo-preview" class="mt-2 hidden relative">
                         <img id="preview-img" src="" alt="Preview" class="w-full h-32 object-cover rounded-lg border-2 border-blue-200">
+                        <button type="button" onclick="removeMainPhoto()" class="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">✕</button>
                     </div>
                 </div>
 
@@ -131,19 +137,45 @@
                     <label class="block text-xs font-bold uppercase text-gray-600 mb-2 tracking-wider">Kamar Mandi</label>
                     <input id="bathrooms" type="number" placeholder="1" class="w-full input-modern p-3 rounded-xl">
                 </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-600 mb-2 tracking-wider">Lantai</label>
+                    <input id="floors" type="number" placeholder="1" class="w-full input-modern p-3 rounded-xl">
+                </div>
 
                 <div>
                     <label class="block text-xs font-bold uppercase text-gray-600 mb-2 tracking-wider">Sertifikat</label>
                     <select id="certificate" class="w-full input-modern p-3 rounded-xl cursor-pointer">
                         <option value="SHM">SHM</option>
                         <option value="HGB">HGB</option>
-                        <option value="AJB">AJB</option>
+                        <option value="GIRIK">GIRIK</option>
+                        <option value="LAINNYA">LAINNYA</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-600 mb-2 tracking-wider">Listrik (Watt) - Opsional</label>
+                    <input id="electricity" type="number" placeholder="2200" class="w-full input-modern p-3 rounded-xl">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-600 mb-2 tracking-wider">Sumber Air (Opsional)</label>
+                    <select id="water_source" class="w-full input-modern p-3 rounded-xl cursor-pointer">
+                        <option value="">-- Pilih --</option>
+                        <option value="PAM">PAM</option>
+                        <option value="Sumur">Sumur</option>
+                        <option value="Bor">Bor</option>
+                        <option value="LAINNYA">LAINNYA</option>
                     </select>
                 </div>
                 <div class="md:col-span-3">
                     <label class="block text-xs font-bold uppercase text-gray-600 mb-2 tracking-wider">Alamat / Lokasi</label>
-                    <input id="address" type="text" placeholder="Kec. Serpong, Tangerang Selatan" class="w-full input-modern p-3 rounded-xl">
+                    <input id="address" type="text" placeholder="Contoh: Serpong, Tangerang Selatan" class="w-full input-modern p-3 rounded-xl">
                 </div>
+            </div>
+
+            <div class="mt-6 border-t border-slate-700 pt-6">
+                <label class="block text-xs font-bold uppercase text-gray-600 mb-3 tracking-wider">📷 Foto Tambahan (Opsional)</label>
+                <p class="text-xs text-slate-400 mb-3">Upload foto interior dan sudut pandang lain dari properti</p>
+                <input id="additional-photos" type="file" accept="image/*" multiple class="w-full input-modern p-3 rounded-xl cursor-pointer">
+                <div id="additional-preview" class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3"></div>
             </div>
 
             <button onclick="simpanRumah()" class="btn-modern mt-8 w-full text-white font-bold py-4 rounded-xl transition-all">
@@ -246,8 +278,22 @@
         </div>
     </footer>   
 
+    <!-- Detail Modal -->
+    <div id="detail-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+        <div class="card-glow p-8 rounded-3xl max-w-4xl w-full max-h-[85vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="section-title">🏡 Detail Properti</h2>
+                <button onclick="closeDetailModal()" class="text-slate-400 hover:text-white text-3xl font-bold transition-colors">✕</button>
+            </div>
+            
+            <div id="detail-content" class="space-y-6">
+                <!-- Content will be loaded dynamically -->
+            </div>
+        </div>
+    </div>
+
     <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div class="card-glow p-8 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="card-glow p-8 rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="section-title">✏️ Edit Listing Properti</h2>
                 <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
@@ -271,11 +317,17 @@
                     </select>
                 </div>
 
+                <div class="md:col-span-4">
+                    <label class="block text-xs font-bold uppercase text-gray-600 mb-2 tracking-wider">Deskripsi Properti (Opsional)</label>
+                    <textarea id="edit-description" class="w-full input-modern p-3 rounded-xl" rows="3"></textarea>
+                </div>
+
                 <div class="md:col-span-2">
                     <label class="block text-xs font-bold uppercase text-gray-600 mb-2 tracking-wider">📸 Foto Properti</label>
                     <input id="edit-photo" type="file" accept="image/*" class="w-full input-modern p-3 rounded-xl cursor-pointer" onchange="previewPhoto(this, true)">
-                    <div id="edit-photo-preview" class="mt-2">
+                    <div id="edit-photo-preview" class="mt-2 relative">
                         <img id="edit-preview-img" src="" alt="Preview" class="w-full h-32 object-cover rounded-lg border-2 border-blue-200">
+                        <button type="button" onclick="removeEditMainPhoto()" class="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">✕</button>
                     </div>
                 </div>
 
@@ -295,19 +347,46 @@
                     <label class="block text-xs font-bold uppercase text-gray-600 mb-2 tracking-wider">Kamar Mandi</label>
                     <input id="edit-bathrooms" type="number" class="w-full input-modern p-3 rounded-xl">
                 </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-600 mb-2 tracking-wider">Lantai</label>
+                    <input id="edit-floors" type="number" class="w-full input-modern p-3 rounded-xl">
+                </div>
 
                 <div>
                     <label class="block text-xs font-bold uppercase text-gray-600 mb-2 tracking-wider">Sertifikat</label>
                     <select id="edit-certificate" class="w-full input-modern p-3 rounded-xl cursor-pointer">
                         <option value="SHM">SHM</option>
                         <option value="HGB">HGB</option>
-                        <option value="AJB">AJB</option>
+                        <option value="GIRIK">GIRIK</option>
+                        <option value="LAINNYA">LAINNYA</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-600 mb-2 tracking-wider">Listrik (Watt) - Opsional</label>
+                    <input id="edit-electricity" type="number" class="w-full input-modern p-3 rounded-xl">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-600 mb-2 tracking-wider">Sumber Air (Opsional)</label>
+                    <select id="edit-water_source" class="w-full input-modern p-3 rounded-xl cursor-pointer">
+                        <option value="">-- Pilih --</option>
+                        <option value="PAM">PAM</option>
+                        <option value="Sumur">Sumur</option>
+                        <option value="Bor">Bor</option>
+                        <option value="LAINNYA">LAINNYA</option>
                     </select>
                 </div>
                 <div class="md:col-span-3">
                     <label class="block text-xs font-bold uppercase text-gray-600 mb-2 tracking-wider">Alamat / Lokasi</label>
                     <input id="edit-address" type="text" class="w-full input-modern p-3 rounded-xl">
                 </div>
+            </div>
+
+            <div class="mt-6 border-t border-gray-200 pt-6">
+                <label class="block text-xs font-bold uppercase text-gray-600 mb-3 tracking-wider">📷 Foto Tambahan (Opsional)</label>
+                <div id="edit-additional-photos-list" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
+                <p class="text-xs text-gray-500 mb-3">Upload foto interior dan sudut pandang lain dari properti</p>
+                <input id="edit-additional-photos" type="file" accept="image/*" multiple class="w-full input-modern p-3 rounded-xl cursor-pointer">
+                <div id="edit-additional-preview" class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3"></div>
             </div>
 
             <div class="flex gap-3 mt-8">
@@ -327,6 +406,7 @@
         let currentPhotoPath = '';
         let currentPage = 1;
         let currentFilters = {};
+        let additionalPhotoPaths = []; // Array untuk menyimpan path foto tambahan
 
         // Preview foto sebelum upload
         function previewPhoto(input, isEdit = false) {
@@ -343,6 +423,20 @@
                 };
                 reader.readAsDataURL(input.files[0]);
             }
+        }
+
+        // Remove main photo preview
+        function removeMainPhoto() {
+            document.getElementById('photo').value = '';
+            document.getElementById('photo-preview').classList.add('hidden');
+            currentPhotoPath = '';
+        }
+
+        // Remove edit main photo preview
+        function removeEditMainPhoto() {
+            document.getElementById('edit-photo').value = '';
+            document.getElementById('edit-photo-preview').classList.add('hidden');
+            currentEditPhotoPath = '';
         }
 
         // Format currency, pemisah ribuan
@@ -427,8 +521,8 @@
                 tabel.innerHTML = data.map(r => `
                     <tr class="table-row-hover">
                         <td class="p-6">
-                            ${r.photo_path ? `<img src="${r.photo_path}" alt="Foto" class="w-20 h-20 rounded-lg object-cover mb-2 border border-gray-200">` : '<div class="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">No Foto</div>'}
-                            <div class="font-bold text-gray-900 text-sm">${r.title}</div>
+                            ${r.photo_path ? `<img src="${r.photo_path}?t=${Date.now()}" alt="Foto" class="w-20 h-20 rounded-lg object-cover mb-2 border border-gray-200 cursor-pointer" onclick="viewPropertyDetail(${r.id})">` : '<div class="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">No Foto</div>'}
+                            <div class="font-bold text-gray-900 text-sm cursor-pointer hover:text-blue-600 transition-colors" onclick="viewPropertyDetail(${r.id})">${r.title}</div>
                             <div class="text-xs text-gray-500 mt-2">📍 ${r.address || 'Alamat belum diisi'}</div>
                             <div class="text-[11px] text-blue-600 mt-2 font-bold uppercase tracking-wider">${r.certificate} Certificate</div>
                         </td>
@@ -508,46 +602,144 @@
         }
 
         async function simpanRumah() {
-            const priceRaw = document.getElementById('price-raw').value || document.getElementById('price').value.replace(/\D/g, '');
-            
-            const photoUploaded = await uploadPhoto();
-            if (!photoUploaded && document.getElementById('photo').files && document.getElementById('photo').files[0]) {
-                return; 
-            }
-            
-            const data = {
-                title: document.getElementById('title').value,
-                price: parseInt(priceRaw || 0),
-                listing_type: document.getElementById('type').value,
-                land_size: parseInt(document.getElementById('land_size').value || 0),
-                building_size: parseInt(document.getElementById('building_size').value || 0),
-                bedrooms: parseInt(document.getElementById('bedrooms').value || 0),
-                bathrooms: parseInt(document.getElementById('bathrooms').value || 0),
-                certificate: document.getElementById('certificate').value,
-                address: document.getElementById('address').value,
-                photo_path: currentPhotoPath
-            };
+            try {
+                const priceRaw = document.getElementById('price-raw').value || document.getElementById('price').value.replace(/\D/g, '');
+                
+                // Upload foto utama (sama seperti sebelumnya)
+                const photoUploaded = await uploadPhoto();
+                if (!photoUploaded && document.getElementById('photo').files && document.getElementById('photo').files[0]) {
+                    return; 
+                }
 
-            if(!data.title || !data.price) {
-                alert("Judul dan Harga wajib diisi!");
-                return;
-            }
+                // Upload foto tambahan dari array selectedAdditionalFiles
+                additionalPhotoPaths = []; // Reset
+                if (selectedAdditionalFiles.length > 0) {
+                    for (let file of selectedAdditionalFiles) {
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        
+                        try {
+                            const res = await fetch('http://localhost:8080/upload', {
+                                method: 'POST',
+                                body: formData
+                            });
+                            const data = await res.json();
+                            if (data.photo_path) {
+                                additionalPhotoPaths.push(data.photo_path);
+                                console.log('Additional photo uploaded:', data.photo_path);
+                            }
+                        } catch (err) {
+                            console.error('Failed to upload additional photo:', err);
+                        }
+                    }
+                }
+                
+                const data = {
+                    title: document.getElementById('title').value,
+                    description: document.getElementById('description').value,
+                    price: parseInt(priceRaw || 0),
+                    listing_type: document.getElementById('type').value,
+                    land_size: parseInt(document.getElementById('land_size').value || 0),
+                    building_size: parseInt(document.getElementById('building_size').value || 0),
+                    bedrooms: parseInt(document.getElementById('bedrooms').value || 0),
+                    bathrooms: parseInt(document.getElementById('bathrooms').value || 0),
+                    floors: parseInt(document.getElementById('floors').value || 1),
+                    certificate: document.getElementById('certificate').value,
+                    electricity: parseInt(document.getElementById('electricity').value || 0),
+                    water_source: document.getElementById('water_source').value,
+                    address: document.getElementById('address').value,
+                    photo_path: currentPhotoPath
+                };
 
-            await fetch(API_URL, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(data)
-            });
-            
-            document.getElementById('title').value = "";
-            document.getElementById('price').value = "";
-            document.getElementById('price-raw').value = "";
-            document.getElementById('address').value = "";
-            document.getElementById('photo').value = "";
-            document.getElementById('photo-preview').classList.add('hidden');
-            currentPhotoPath = '';
-            
-            loadData(currentPage); 
+                // Validasi field required saja
+                if (!data.title || data.title.length < 3) {
+                    alert("❌ Judul minimal 3 karakter!");
+                    return;
+                }
+                if (!data.price || data.price <= 0) {
+                    alert("❌ Harga harus lebih dari 0!");
+                    return;
+                }
+                if (!data.land_size || data.land_size <= 0) {
+                    alert("❌ Luas Tanah harus lebih dari 0!");
+                    return;
+                }
+                if (!data.building_size || data.building_size <= 0) {
+                    alert("❌ Luas Bangunan harus lebih dari 0!");
+                    return;
+                }
+                if (!data.address) {
+                    alert("❌ Alamat wajib diisi!");
+                    return;
+                }
+
+                console.log('Sending data:', data);
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                console.log('Response:', result);
+
+                if (!response.ok) {
+                    console.error('Server error:', result);
+                    if (result.fields) {
+                        // Show validation errors
+                        const errors = Object.entries(result.fields).map(([field, msg]) => `${field}: ${msg}`).join('\n');
+                        alert(`❌ Validasi gagal:\n${errors}`);
+                    } else {
+                        alert(`❌ Gagal menyimpan: ${result.error || result.message || 'Unknown error'}`);
+                    }
+                    return;
+                }
+
+                // Save additional photos if any
+                if (additionalPhotoPaths.length > 0 && result.data && result.data.id) {
+                    for (const photoPath of additionalPhotoPaths) {
+                        try {
+                            await fetch('http://localhost:8080/property-photos', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({
+                                    property_id: result.data.id,
+                                    photo_path: photoPath
+                                })
+                            });
+                        } catch (e) {
+                            console.error('Failed to save additional photo:', e);
+                        }
+                    }
+                }
+
+                alert('✅ Listing properti berhasil disimpan!');
+                
+                document.getElementById('title').value = "";
+                document.getElementById('description').value = "";
+                document.getElementById('price').value = "";
+                document.getElementById('price-raw').value = "";
+                document.getElementById('address').value = "";
+                document.getElementById('land_size').value = "";
+                document.getElementById('building_size').value = "";
+                document.getElementById('bedrooms').value = "";
+                document.getElementById('bathrooms').value = "";
+                document.getElementById('floors').value = "";
+                document.getElementById('electricity').value = "";
+                document.getElementById('photo').value = "";
+                document.getElementById('photo-preview').classList.add('hidden');
+                document.getElementById('additional-photos').value = "";
+                document.getElementById('additional-preview').innerHTML = "";
+                currentPhotoPath = '';
+                additionalPhotoPaths = [];
+                selectedAdditionalFiles = [];
+                
+                loadData(currentPage); 
+            } catch (e) {
+                console.error('Error saat menyimpan:', e);
+                alert('❌ Terjadi error: ' + e.message);
+            }
         }
 
         async function hapusRumah(id) {
@@ -593,6 +785,7 @@
                 currentEditPhotoPath = property.photo_path || '';
 
                 document.getElementById('edit-title').value = property.title || '';
+                document.getElementById('edit-description').value = property.description || '';
                 document.getElementById('edit-price').value = new Intl.NumberFormat('id-ID').format(property.price || 0);
                 document.getElementById('edit-price-raw').value = property.price || 0;
                 document.getElementById('edit-type').value = property.listing_type || 'WTS';
@@ -600,7 +793,10 @@
                 document.getElementById('edit-building_size').value = property.building_size || 0;
                 document.getElementById('edit-bedrooms').value = property.bedrooms || 0;
                 document.getElementById('edit-bathrooms').value = property.bathrooms || 0;
+                document.getElementById('edit-floors').value = property.floors || 1;
                 document.getElementById('edit-certificate').value = property.certificate || 'SHM';
+                document.getElementById('edit-electricity').value = property.electricity || 0;
+                document.getElementById('edit-water_source').value = property.water_source || 'PAM';
                 document.getElementById('edit-address').value = property.address || '';
 
                 if (property.photo_path) {
@@ -612,6 +808,10 @@
 
                 document.getElementById('edit-photo').value = '';
 
+                // Load existing additional photos
+                loadEditAdditionalPhotos(id);
+
+                document.body.style.overflow = 'hidden';
                 document.getElementById('edit-modal').classList.remove('hidden');
                 console.log('Edit modal opened successfully');
             } catch (e) {
@@ -622,6 +822,11 @@
 
         function closeEditModal() {
             document.getElementById('edit-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+            document.getElementById('edit-additional-photos-list').innerHTML = '';
+            document.getElementById('edit-additional-preview').innerHTML = '';
+            editAdditionalPhotosToDelete = [];
+            editSelectedAdditionalFiles = [];
             currentEditId = null;
             currentEditPhotoPath = '';
         }
@@ -631,6 +836,7 @@
 
             const priceRaw = document.getElementById('edit-price-raw').value;
 
+            // Upload foto utama baru (sama seperti sebelumnya)
             const photoInput = document.getElementById('edit-photo');
             if (photoInput.files && photoInput.files[0]) {
                 const formData = new FormData();
@@ -652,15 +858,42 @@
                 }
             }
 
+            // Upload foto tambahan baru dari editSelectedAdditionalFiles array
+            let editNewAdditionalPhotos = [];
+            if (editSelectedAdditionalFiles.length > 0) {
+                for (let file of editSelectedAdditionalFiles) {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    try {
+                        const res = await fetch('http://localhost:8080/upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const data = await res.json();
+                        if (data.photo_path) {
+                            editNewAdditionalPhotos.push(data.photo_path);
+                            console.log('Additional photo uploaded:', data.photo_path);
+                        }
+                    } catch (err) {
+                        console.error('Failed to upload additional photo:', err);
+                    }
+                }
+            }
+
             const data = {
                 title: document.getElementById('edit-title').value,
+                description: document.getElementById('edit-description').value,
                 price: parseInt(priceRaw || 0),
                 listing_type: document.getElementById('edit-type').value,
                 land_size: parseInt(document.getElementById('edit-land_size').value || 0),
                 building_size: parseInt(document.getElementById('edit-building_size').value || 0),
                 bedrooms: parseInt(document.getElementById('edit-bedrooms').value || 0),
                 bathrooms: parseInt(document.getElementById('edit-bathrooms').value || 0),
+                floors: parseInt(document.getElementById('edit-floors').value || 1),
                 certificate: document.getElementById('edit-certificate').value,
+                electricity: parseInt(document.getElementById('edit-electricity').value || 0),
+                water_source: document.getElementById('edit-water_source').value,
                 address: document.getElementById('edit-address').value,
                 photo_path: currentEditPhotoPath
             };
@@ -677,9 +910,38 @@
                     body: JSON.stringify(data)
                 });
 
+                // Delete removed additional photos
+                for (const photoId of editAdditionalPhotosToDelete) {
+                    try {
+                        await fetch(`http://localhost:8080/property-photos/${photoId}`, {
+                            method: 'DELETE'
+                        });
+                        console.log('Deleted photo:', photoId);
+                    } catch (e) {
+                        console.error('Failed to delete photo:', e);
+                    }
+                }
+
+                // Add new additional photos
+                for (const photoPath of editNewAdditionalPhotos) {
+                    try {
+                        await fetch('http://localhost:8080/property-photos', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                property_id: currentEditId,
+                                photo_path: photoPath
+                            })
+                        });
+                        console.log('Added new photo:', photoPath);
+                    } catch (e) {
+                        console.error('Failed to add photo:', e);
+                    }
+                }
+
                 closeEditModal();
-                loadData(currentPage); 
                 alert('Listing berhasil diupdate!');
+                await loadData(currentPage);
             } catch (e) {
                 console.error("Gagal update listing", e);
                 alert("Gagal update listing");
@@ -687,6 +949,285 @@
         }
 
         loadData(1);
+
+        // Variables for edit modal additional photos
+        let editAdditionalPhotosToDelete = [];
+        let editSelectedAdditionalFiles = []; // Array untuk menyimpan file yang dipilih
+
+        // Load existing additional photos for edit modal
+        async function loadEditAdditionalPhotos(propertyId) {
+            editAdditionalPhotosToDelete = [];
+            editSelectedAdditionalFiles = [];
+            const container = document.getElementById('edit-additional-photos-list');
+            container.innerHTML = '';
+
+            try {
+                const res = await fetch(`http://localhost:8080/property-photos/${propertyId}`);
+                const json = await res.json();
+                const photos = json.data || [];
+
+                photos.forEach(photo => {
+                    const imgDiv = document.createElement('div');
+                    imgDiv.className = 'relative';
+                    imgDiv.setAttribute('data-photo-id', photo.id);
+                    imgDiv.innerHTML = `
+                        <img src="${photo.photo_path}" class="w-full h-24 object-cover rounded-lg border-2 border-gray-300">
+                        <button type="button" class="delete-existing-photo absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">✕</button>
+                    `;
+                    container.appendChild(imgDiv);
+
+                    const deleteBtn = imgDiv.querySelector('.delete-existing-photo');
+                    deleteBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        editAdditionalPhotosToDelete.push(photo.id);
+                        imgDiv.remove();
+                    });
+                });
+            } catch (e) {
+                console.error('Failed to load additional photos:', e);
+            }
+
+            // Setup event listener for new photos
+            setupEditAdditionalPhotosPreview();
+        }
+
+        // Setup preview handler for edit modal additional photos (can add more files)
+        function setupEditAdditionalPhotosPreview() {
+            const editAdditionalInput = document.getElementById('edit-additional-photos');
+            if (!editAdditionalInput) {
+                console.error('Edit additional photos input not found');
+                return;
+            }
+
+            // Remove old event listener if any by cloning
+            const newInput = editAdditionalInput.cloneNode(true);
+            editAdditionalInput.parentNode.replaceChild(newInput, editAdditionalInput);
+
+            // Add event listener to append files (not replace)
+            newInput.addEventListener('change', function(e) {
+                const files = Array.from(e.target.files);
+                
+                // Append new files to existing array
+                editSelectedAdditionalFiles.push(...files);
+                
+                // Render all previews
+                renderEditAdditionalPreviews();
+                
+                // Clear input untuk bisa select lagi
+                e.target.value = '';
+            }, false);
+        }
+
+        function renderEditAdditionalPreviews() {
+            const previewContainer = document.getElementById('edit-additional-preview');
+            previewContainer.innerHTML = '';
+
+            editSelectedAdditionalFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const imgDiv = document.createElement('div');
+                    imgDiv.className = 'relative';
+                    imgDiv.innerHTML = `
+                        <img src="${event.target.result}" class="w-full h-24 object-cover rounded-lg border-2 border-green-500">
+                        <button type="button" onclick="removeEditAdditionalFile(${index})" class="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">✕</button>
+                    `;
+                    previewContainer.appendChild(imgDiv);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function removeEditAdditionalFile(index) {
+            editSelectedAdditionalFiles.splice(index, 1);
+            renderEditAdditionalPreviews();
+        }
+    </script>
+
+    <script>
+    // Array to store selected files (to support adding more files without replacing)
+    let selectedAdditionalFiles = [];
+
+    // Handle additional photos preview (can add more files without replacing old ones)
+    document.addEventListener('DOMContentLoaded', function() {
+        const additionalPhotosInput = document.getElementById('additional-photos');
+        if (additionalPhotosInput) {
+            additionalPhotosInput.addEventListener('change', function(e) {
+                const files = Array.from(e.target.files);
+                
+                // Append new files to existing array (tidak replace)
+                selectedAdditionalFiles.push(...files);
+                
+                // Render all previews
+                renderAdditionalPreviews();
+                
+                // Clear input untuk bisa select lagi
+                e.target.value = '';
+            });
+        }
+    });
+
+    function renderAdditionalPreviews() {
+        const previewContainer = document.getElementById('additional-preview');
+        previewContainer.innerHTML = '';
+
+        selectedAdditionalFiles.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const imgDiv = document.createElement('div');
+                imgDiv.className = 'relative';
+                imgDiv.innerHTML = `
+                    <img src="${event.target.result}" class="w-full h-24 object-cover rounded-lg border-2 border-slate-600">
+                    <button type="button" onclick="removeAdditionalFile(${index})" class="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">✕</button>
+                `;
+                previewContainer.appendChild(imgDiv);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function removeAdditionalFile(index) {
+        selectedAdditionalFiles.splice(index, 1);
+        renderAdditionalPreviews();
+    }
+
+    function removeAdditionalPhoto(index, element) {
+        additionalPhotoPaths.splice(index, 1);
+        if (element && element.parentNode) {
+            element.parentNode.removeChild(element);
+        }
+    }
+
+    // View property detail modal
+    async function viewPropertyDetail(id) {
+        try {
+            document.body.style.overflow = 'hidden';
+            
+            const res = await fetch(`${API_URL}/${id}`);
+            const json = await res.json();
+            
+            if (!json.data) {
+                throw new Error('Property not found');
+            }
+            
+            const property = json.data;
+            
+            // Fetch additional photos
+            console.log('Fetching additional photos for property:', id);
+            const photosRes = await fetch(`http://localhost:8080/property-photos/${id}`);
+            const photosJson = await photosRes.json();
+            console.log('Additional photos response:', photosJson);
+            const additionalPhotos = photosJson.data || [];
+            console.log('Additional photos count:', additionalPhotos.length);
+
+            const content = `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Left Column: Photos -->
+                    <div class="space-y-4">
+                        <div class="aspect-video rounded-2xl overflow-hidden border-2 border-slate-700">
+                            ${property.photo_path ? 
+                                `<img src="${property.photo_path}" alt="Main Photo" class="w-full h-full object-cover">` : 
+                                '<div class="w-full h-full bg-slate-800 flex items-center justify-center text-slate-500">No Photo</div>'}
+                        </div>
+                        
+                        ${additionalPhotos.length > 0 ? `
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-200 mb-3">\ud83d\udcf8 Foto Tambahan</h3>
+                                <div class="grid grid-cols-3 gap-3">
+                                    ${additionalPhotos.map(photo => `
+                                        <div class="aspect-square rounded-lg overflow-hidden border border-slate-700">
+                                            <img src="${photo.photo_path}" alt="Additional" class="w-full h-full object-cover cursor-pointer hover:scale-110 transition-transform" onclick="window.open('${photo.photo_path}', '_blank')">
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <!-- Right Column: Details -->
+                    <div class="space-y-4">
+                        <div>
+                            <h2 class="text-3xl font-bold text-white mb-2">${property.title}</h2>
+                            <div class="flex items-center gap-3 mb-4">
+                                <span class="px-4 py-1 rounded-full text-xs font-bold ${property.listing_type === 'WTS' ? 'bg-green-600' : 'bg-orange-600'} text-white">
+                                    ${property.listing_type === 'WTS' ? '\ud83d\udcc8 DIJUAL' : '\ud83d\udd04 DISEWA'}
+                                </span>
+                                <span class="text-slate-400 text-sm">${property.certificate}</span>
+                            </div>
+                            <div class="price-tag text-3xl mb-4">Rp ${Number(property.price).toLocaleString('id-ID')}</div>
+                        </div>
+
+                        ${property.description ? `
+                            <div class="bg-slate-800/50 rounded-xl p-4">
+                                <h3 class="text-sm font-bold text-slate-400 uppercase mb-2">Deskripsi</h3>
+                                <p class="text-slate-200 text-sm leading-relaxed">${property.description}</p>
+                            </div>
+                        ` : ''}
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-slate-800/50 rounded-xl p-4">
+                                <div class="text-xs text-slate-400 uppercase mb-1">Luas Tanah</div>
+                                <div class="text-2xl font-bold text-white">${property.land_size} m²</div>
+                            </div>
+                            <div class="bg-slate-800/50 rounded-xl p-4">
+                                <div class="text-xs text-slate-400 uppercase mb-1">Luas Bangunan</div>
+                                <div class="text-2xl font-bold text-white">${property.building_size} m²</div>
+                            </div>
+                            <div class="bg-slate-800/50 rounded-xl p-4">
+                                <div class="text-xs text-slate-400 uppercase mb-1">Kamar Tidur</div>
+                                <div class="text-2xl font-bold text-white">\ud83d\udecc ${property.bedrooms}</div>
+                            </div>
+                            <div class="bg-slate-800/50 rounded-xl p-4">
+                                <div class="text-xs text-slate-400 uppercase mb-1">Kamar Mandi</div>
+                                <div class="text-2xl font-bold text-white">\ud83d\udebf ${property.bathrooms}</div>
+                            </div>
+                            <div class="bg-slate-800/50 rounded-xl p-4">
+                                <div class="text-xs text-slate-400 uppercase mb-1">Lantai</div>
+                                <div class="text-2xl font-bold text-white">${property.floors}</div>
+                            </div>
+                            ${property.electricity > 0 ? `
+                                <div class="bg-slate-800/50 rounded-xl p-4">
+                                    <div class="text-xs text-slate-400 uppercase mb-1">Listrik</div>
+                                    <div class="text-2xl font-bold text-white">\u26a1 ${property.electricity}W</div>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        ${property.water_source ? `
+                            <div class="bg-slate-800/50 rounded-xl p-4">
+                                <div class="text-xs text-slate-400 uppercase mb-1">Sumber Air</div>
+                                <div class="text-lg font-bold text-white">\ud83d\udca7 ${property.water_source}</div>
+                            </div>
+                        ` : ''}
+
+                        <div class="bg-slate-800/50 rounded-xl p-4">
+                            <div class="text-xs text-slate-400 uppercase mb-1">\ud83d\udccd Lokasi</div>
+                            <div class="text-slate-200">${property.address}</div>
+                        </div>
+
+                        <div class="flex gap-3 mt-6">
+                            <button onclick="editRumah(${property.id}); closeDetailModal();" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all">
+                                \u270f\ufe0f Edit
+                            </button>
+                            <button onclick="hapusRumah(${property.id}); closeDetailModal();" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-all">
+                                \ud83d\uddd1\ufe0f Hapus
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('detail-content').innerHTML = content;
+            document.getElementById('detail-modal').classList.remove('hidden');
+        } catch (e) {
+            console.error('Failed to load property detail:', e);
+            alert('\u274c Gagal memuat detail properti');
+        }
+    }
+
+    function closeDetailModal() {
+        document.getElementById('detail-modal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
     </script>
 
     <script>

@@ -16,8 +16,8 @@ import (
 
 // Constants untuk image validation
 const (
-	MaxFileSize   = 5 * 1024 * 1024 // 5MB
-	MaxFileSizeMB = 5
+	MaxFileSize   = 100 * 1024 * 1024 // 100MB
+	MaxFileSizeMB = 100
 )
 
 var AllowedImageTypes = map[string]bool{

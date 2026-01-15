@@ -5,7 +5,7 @@ import "time"
 type Property struct {
 	ID          uint   `json:"id" gorm:"primaryKey"`
 	Title       string `json:"title" binding:"required,min=3,max=255"`
-	Description string `json:"description" binding:"required,min=10,max=2000"`
+	Description string `json:"description" binding:"max=2000"`                // Optional
 	ListingType string `json:"listing_type" binding:"required,oneof=WTS WTR"` // WTS, WTR
 	Price       int64  `json:"price" binding:"required,gt=0"`
 
@@ -17,10 +17,10 @@ type Property struct {
 	Floors       int `json:"floors" binding:"required,gte=1,lte=50"` // Jumlah Lantai
 
 	// Fasilitas & Legalitas
-	Certificate string `json:"certificate" binding:"required,oneof=SHM HGB GIRIK LAINNYA"`  // SHM, HGB, dll
-	Electricity int    `json:"electricity" binding:"required,gt=0"`                         // Daya Listrik (Watt)
-	WaterSource string `json:"water_source" binding:"required,oneof=PAM Sumur Bor LAINNYA"` // PAM, Sumur
-	Address     string `json:"address" binding:"required,min=10,max=500"`
+	Certificate string `json:"certificate" binding:"required,oneof=SHM HGB GIRIK LAINNYA"` // SHM, HGB, dll
+	Electricity int    `json:"electricity"`                                                // Daya Listrik (Watt) - Optional
+	WaterSource string `json:"water_source"`                                               // PAM, Sumur - Optional
+	Address     string `json:"address" binding:"required,max=500"`                         // No min length
 
 	// Media
 	PhotoPath string `json:"photo_path"` // Path foto properti

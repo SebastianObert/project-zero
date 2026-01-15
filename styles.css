@@ -25,7 +25,6 @@ html, body {
     color: #f1f5f9;
 }
 
-/* smooth scrolling for in-page navigation */
 html {
     scroll-behavior: smooth;
 }

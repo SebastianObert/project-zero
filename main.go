@@ -16,6 +16,7 @@ import (
 
 var db *gorm.DB
 var propertyHandler *handlers.PropertyHandler
+var propertyPhotoHandler *handlers.PropertyPhotoHandler
 
 func initDB() {
 	// Ambil config dari .env
@@ -30,11 +31,12 @@ func initDB() {
 	}
 
 	// Buat/update tabel otomatis
-	db.AutoMigrate(&models.Property{})
+	db.AutoMigrate(&models.Property{}, &models.PropertyPhoto{})
 
 	// Initialize repository dan handler
 	propertyRepo := database.NewPropertyRepository(db)
 	propertyHandler = handlers.NewPropertyHandler(propertyRepo)
+	propertyPhotoHandler = handlers.NewPropertyPhotoHandler(db)
 
 	// Buat folder untuk upload foto jika belum ada
 	os.MkdirAll("./uploads", os.ModePerm)
@@ -61,6 +63,9 @@ func main() {
 
 	r := gin.Default()
 
+	// Set max multipart memory untuk support file besar (100MB)
+	r.MaxMultipartMemory = 100 * 1024 * 1024 // 100MB
+
 	// Pasang middleware CORS biar Frontend (HTML) bisa akses Backend
 	r.Use(corsMiddleware())
 
@@ -76,6 +81,11 @@ func main() {
 	r.GET("/properties/:id", propertyHandler.GetPropertyByID)
 	r.PUT("/properties/:id", propertyHandler.UpdateProperty)
 	r.DELETE("/properties/:id", propertyHandler.DeleteProperty)
+
+	// Property photos routes
+	r.POST("/property-photos", propertyPhotoHandler.AddPropertyPhoto)
+	r.GET("/property-photos/:property_id", propertyPhotoHandler.GetPropertyPhotos)
+	r.DELETE("/property-photos/:id", propertyPhotoHandler.DeletePropertyPhoto)
 
 	r.Run(":8080")
 }
