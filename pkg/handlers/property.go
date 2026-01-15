@@ -8,7 +8,6 @@ import (
 	"project-zero/pkg/database"
 	"project-zero/pkg/utils"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -39,6 +38,13 @@ func NewPropertyHandler(repo *database.PropertyRepository) *PropertyHandler {
 
 // CreateProperty membuat property baru
 func (h *PropertyHandler) CreateProperty(c *gin.Context) {
+	// Get userID from JWT middleware
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
 	var input models.Property
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -47,6 +53,9 @@ func (h *PropertyHandler) CreateProperty(c *gin.Context) {
 		})
 		return
 	}
+
+	// Set UserID dari token JWT
+	input.UserID = userID.(uint)
 
 	err := h.repo.CreateProperty(&input)
 	if err != nil {
@@ -62,10 +71,20 @@ func (h *PropertyHandler) CreateProperty(c *gin.Context) {
 
 // GetAllProperties mengambil semua property dengan pagination dan filtering
 func (h *PropertyHandler) GetAllProperties(c *gin.Context) {
+	// Get userID from JWT middleware
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
 	// Parse query parameters
 	params := utils.ParseQueryParams(c)
 
-	// Fetch properties dari database
+	// Tambahkan filter userID
+	params.UserID = userID.(uint)
+
+	// Fetch properties dari database (hanya milik user ini)
 	properties, total, err := h.repo.GetPropertiesWithFilters(params)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -176,7 +195,7 @@ func (h *PropertyHandler) DeleteProperty(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Listing berhasil dihapus"})
 }
 
-// UploadFile menghandle upload file dengan validasi
+// UploadFile menghandle upload file dengan validasi dan upload ke Cloudinary
 func UploadFile(c *gin.Context) {
 	file, err := c.FormFile("file")
 	if err != nil {
@@ -190,18 +209,21 @@ func UploadFile(c *gin.Context) {
 		return
 	}
 
-	// Generate unique filename dengan timestamp
-	filename := time.Now().Format("20060102150405") + "_" + file.Filename
-	uploadPath := "./uploads/" + filename
-
-	// Save file
-	if err := c.SaveUploadedFile(file, uploadPath); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal simpan file"})
+	// Upload ke Cloudinary
+	cloudinaryURL, err := utils.UploadToCloudinary(file)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Gagal upload ke cloud",
+			"details": err.Error(),
+		})
 		return
 	}
 
-	// Return URL path untuk database
-	c.JSON(http.StatusOK, gin.H{"photo_path": "/uploads/" + filename})
+	// Return Cloudinary URL untuk database
+	c.JSON(http.StatusOK, gin.H{
+		"photo_path": cloudinaryURL,
+		"message":    "File berhasil diupload ke Cloudinary",
+	})
 }
 
 // validateImageFile memvalidasi file image berdasarkan tipe dan ukuran

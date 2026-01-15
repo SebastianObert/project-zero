@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar - Property Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="font-sans flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div class="card-glow p-8 rounded-3xl max-w-sm w-full mx-4">
+        <div class="text-center mb-8">
+            <div class="text-5xl mb-4">🏠</div>
+            <h1 class="text-3xl font-bold text-white mb-2">Property Zero</h1>
+            <p class="text-gray-400">Buat akun baru</p>
+        </div>
+        
+        <div id="signup-error" class="hidden bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded-xl mb-4 text-sm"></div>
+        <div id="signup-success" class="hidden bg-green-500/10 border border-green-500 text-green-500 px-4 py-3 rounded-xl mb-4 text-sm"></div>
+        
+        <form id="signup-form" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Nama Lengkap</label>
+                <input id="signup-name" type="text" placeholder="John Doe" class="w-full input-modern p-3 rounded-xl" required minlength="2">
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Email</label>
+                <input id="signup-email" type="email" placeholder="you@example.com" class="w-full input-modern p-3 rounded-xl" required>
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase text-gray-400 mb-2 tracking-wider">Password</label>
+                <input id="signup-password" type="password" placeholder="••••••••" class="w-full input-modern p-3 rounded-xl" required minlength="6">
+                <p class="text-xs text-gray-500 mt-1">Minimal 6 karakter</p>
+            </div>
+            <button type="submit" class="btn-modern w-full text-white font-bold py-3 rounded-xl transition-all">
+                📝 Daftar
+            </button>
+        </form>
+        
+        <div class="mt-6 text-center">
+            <p class="text-gray-400 text-sm">
+                Sudah punya akun? 
+                <a href="login.html" class="text-blue-400 hover:text-blue-300 font-semibold transition-colors">Masuk di sini</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080';
+
+        document.getElementById('signup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const errorDiv = document.getElementById('signup-error');
+            const successDiv = document.getElementById('signup-success');
+            
+            errorDiv.classList.add('hidden');
+            successDiv.classList.add('hidden');
+
+            try {
+                const response = await fetch(`${API_URL}/auth/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Simpan token dan user info
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    successDiv.textContent = '✅ Akun berhasil dibuat! Mengalihkan...';
+                    successDiv.classList.remove('hidden');
+                    
+                    // Redirect ke halaman utama
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1000);
+                } else {
+                    errorDiv.textContent = data.error || 'Pendaftaran gagal';
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Terjadi kesalahan: ' + error.message;
+                errorDiv.classList.remove('hidden');
+            }
+        });
+
+        // Cek jika sudah login
+        if (localStorage.getItem('token')) {
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

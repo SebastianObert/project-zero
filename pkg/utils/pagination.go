@@ -12,6 +12,7 @@ type QueryParams struct {
 	Limit       int
 	SortBy      string
 	SortOrder   string
+	UserID      uint // Filter berdasarkan user
 	MinPrice    int64
 	MaxPrice    int64
 	ListingType string

@@ -4,6 +4,7 @@ import "time"
 
 type Property struct {
 	ID          uint   `json:"id" gorm:"primaryKey"`
+	UserID      uint   `json:"user_id" gorm:"index;default:1"` // Foreign key ke User dengan default
 	Title       string `json:"title" binding:"required,min=3,max=255"`
 	Description string `json:"description" binding:"max=2000"`                // Optional
 	ListingType string `json:"listing_type" binding:"required,oneof=WTS WTR"` // WTS, WTR

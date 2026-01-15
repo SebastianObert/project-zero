@@ -7,6 +7,7 @@ import (
 	"project-zero/internal/models"
 	"project-zero/pkg/database"
 	"project-zero/pkg/handlers"
+	"project-zero/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -17,28 +18,37 @@ import (
 var db *gorm.DB
 var propertyHandler *handlers.PropertyHandler
 var propertyPhotoHandler *handlers.PropertyPhotoHandler
+var authHandler *handlers.AuthHandler
 
 func initDB() {
 	// Ambil config dari .env
 	godotenv.Load()
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
-		os.Getenv("DB_HOST"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"), os.Getenv("DB_PORT"))
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
+		os.Getenv("DB_HOST"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"), os.Getenv("DB_PORT"), os.Getenv("DB_SSL_MODE"))
 
 	var err error
 	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		panic("Gagal koneksi ke database")
+		panic(fmt.Sprintf("❌ Gagal koneksi ke database: %v", err))
 	}
+	fmt.Println("✅ Berhasil terhubung ke Neon Database!")
 
-	// Buat/update tabel otomatis
-	db.AutoMigrate(&models.Property{}, &models.PropertyPhoto{})
+	// Buat/update tabel otomatis - TAMBAHKAN models.User
+	db.AutoMigrate(&models.User{}, &models.Property{}, &models.PropertyPhoto{})
+
+	// Initialize Cloudinary
+	if err := utils.InitCloudinary(); err != nil {
+		fmt.Printf("⚠️  Warning: %v\n", err)
+		fmt.Println("📝 Silakan isi CLOUDINARY credentials di file .env")
+	}
 
 	// Initialize repository dan handler
 	propertyRepo := database.NewPropertyRepository(db)
 	propertyHandler = handlers.NewPropertyHandler(propertyRepo)
 	propertyPhotoHandler = handlers.NewPropertyPhotoHandler(db)
+	authHandler = handlers.NewAuthHandler(db)
 
-	// Buat folder untuk upload foto jika belum ada
+	// Buat folder untuk upload foto jika belum ada (optional, backup only)
 	os.MkdirAll("./uploads", os.ModePerm)
 }
 
@@ -69,23 +79,43 @@ func main() {
 	// Pasang middleware CORS biar Frontend (HTML) bisa akses Backend
 	r.Use(corsMiddleware())
 
-	// Serve upload folder sebagai static files
-	r.Static("/uploads", "./uploads")
+	// Serve static files (HTML, CSS, JS)
+	r.StaticFile("/", "./index.html")
+	r.StaticFile("/index.html", "./index.html")
+	r.StaticFile("/login.html", "./login.html")
+	r.StaticFile("/signup.html", "./signup.html")
+	r.StaticFile("/styles.css", "./styles.css")
+	r.StaticFile("/auth-helper.js", "./auth-helper.js")
 
-	// Upload foto endpoint
-	r.POST("/upload", handlers.UploadFile)
+	// Auth routes (PUBLIC - tidak perlu login)
+	auth := r.Group("/auth")
+	{
+		auth.POST("/signup", authHandler.Signup)
+		auth.POST("/login", authHandler.Login)
+	}
 
-	// Property routes
-	r.POST("/properties", propertyHandler.CreateProperty)
-	r.GET("/properties", propertyHandler.GetAllProperties)
-	r.GET("/properties/:id", propertyHandler.GetPropertyByID)
-	r.PUT("/properties/:id", propertyHandler.UpdateProperty)
-	r.DELETE("/properties/:id", propertyHandler.DeleteProperty)
+	// Protected routes (PRIVATE - perlu login dengan JWT)
+	protected := r.Group("/")
+	protected.Use(handlers.AuthMiddleware())
+	{
+		// Profile
+		protected.GET("/auth/profile", authHandler.GetProfile)
 
-	// Property photos routes
-	r.POST("/property-photos", propertyPhotoHandler.AddPropertyPhoto)
-	r.GET("/property-photos/:property_id", propertyPhotoHandler.GetPropertyPhotos)
-	r.DELETE("/property-photos/:id", propertyPhotoHandler.DeletePropertyPhoto)
+		// Upload foto endpoint - upload langsung ke Cloudinary
+		protected.POST("/upload", handlers.UploadFile)
+
+		// Property routes
+		protected.POST("/properties", propertyHandler.CreateProperty)
+		protected.GET("/properties", propertyHandler.GetAllProperties)
+		protected.GET("/properties/:id", propertyHandler.GetPropertyByID)
+		protected.PUT("/properties/:id", propertyHandler.UpdateProperty)
+		protected.DELETE("/properties/:id", propertyHandler.DeleteProperty)
+
+		// Property photos routes
+		protected.POST("/property-photos", propertyPhotoHandler.AddPropertyPhoto)
+		protected.GET("/property-photos/:property_id", propertyPhotoHandler.GetPropertyPhotos)
+		protected.DELETE("/property-photos/:id", propertyPhotoHandler.DeletePropertyPhoto)
+	}
 
 	r.Run(":8080")
 }

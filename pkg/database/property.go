@@ -25,6 +25,11 @@ func (r *PropertyRepository) GetPropertiesWithFilters(params utils.QueryParams) 
 
 	query := r.db.Model(&models.Property{})
 
+	// Filter berdasarkan UserID (WAJIB - setiap user hanya lihat property miliknya)
+	if params.UserID > 0 {
+		query = query.Where("user_id = ?", params.UserID)
+	}
+
 	// Apply filters
 	if params.MinPrice > 0 {
 		query = query.Where("price >= ?", params.MinPrice)

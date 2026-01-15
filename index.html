@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <script src="auth-helper.js"></script>
 </head>
 <body class="font-sans flex flex-col min-h-screen">
     <header class="main-header w-full">
@@ -17,10 +18,8 @@
             </div>
 
             <nav class="hidden md:flex gap-1" aria-label="Main Navigation">
-                <a href="#about" class="nav-link">Dashboard</a>
+                <a href="#organization" class="nav-link">Input Properti</a>
                 <a href="#projects" class="nav-link">Listing Properti</a>
-                <a href="#organization" class="nav-link">Transaksi</a>
-                <a href="#contact" class="nav-link">Analytics</a>
             </nav>
 
             <div class="md:hidden flex items-center gap-3">
@@ -38,24 +37,25 @@
                 </button>
                 <div class="flex items-center gap-3 pl-4 border-l border-slate-700">
                     <div class="text-right hidden lg:block">
-                        <div class="text-sm font-bold text-white">Sebastian Obert</div>
-                        <div class="text-xs text-slate-400">Admin</div>
+                        <div class="text-sm font-bold text-white user-name">Loading...</div>
+                        <div class="text-xs text-slate-400">User</div>
                     </div>
                     <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 p-[2px]">
                         <div class="w-full h-full rounded-full bg-slate-900 flex items-center justify-center border-2 border-transparent">
-                            <span class="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-tr from-blue-400 to-purple-400">SO</span>
+                            <span class="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-tr from-blue-400 to-purple-400 user-initial">?</span>
                         </div>
                     </div>
+                    <button onclick="logout()" class="text-slate-400 hover:text-red-400 transition-colors text-sm ml-2">
+                        Logout
+                    </button>
                 </div>
             </div>
         </div>
 
         <div id="mobile-menu" class="md:hidden absolute top-full left-0 w-full bg-slate-900/95 border-b border-slate-800 shadow-2xl overflow-hidden max-h-0 opacity-0 hidden transition-all duration-300 ease-in-out">
             <div class="p-4 flex flex-col items-center gap-4">
-                <a href="#about" class="nav-link w-full text-center">Dashboard</a>
+                <a href="#organization" class="nav-link w-full text-center">Input Properti</a>
                 <a href="#projects" class="nav-link w-full text-center">Listing Properti</a>
-                <a href="#organization" class="nav-link w-full text-center">Transaksi</a>
-                <a href="#contact" class="nav-link w-full text-center">Analytics</a>
 
                 <div class="w-full border-t border-slate-800 mt-2 pt-4 flex items-center justify-between px-2">
                     <div class="flex items-center gap-3">
@@ -64,7 +64,7 @@
                         </div>
                         <div class="text-left">
                             <div class="text-sm font-bold text-white">Sebastian Obert</div>
-                            <div class="text-xs text-slate-400">Admin</div>
+                            <div class="text-xs text-slate-400">User</div>
                         </div>
                     </div>
                     <button class="nav-link">🔔</button>
@@ -402,11 +402,23 @@
         
 
     <script>
-        const API_URL = 'http://localhost:8080/properties';
         let currentPhotoPath = '';
         let currentPage = 1;
         let currentFilters = {};
         let additionalPhotoPaths = []; // Array untuk menyimpan path foto tambahan
+
+        // Cek login saat halaman load
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!requireAuth()) {
+                return; // Stop jika belum login
+            }
+            
+            // Update UI dengan nama user
+            updateUserUI();
+            
+            // Load properties
+            loadData();
+        });
 
         // Preview foto sebelum upload
         function previewPhoto(input, isEdit = false) {
@@ -459,7 +471,7 @@
             formData.append('file', photoInput.files[0]);
 
             try {
-                const res = await fetch('http://localhost:8080/upload', {
+                const res = await authFetch(`${API_BASE_URL}/upload`, {
                     method: 'POST',
                     body: formData
                 });
@@ -499,9 +511,9 @@
                 const bedrooms = document.getElementById('filter-bedrooms').value;
                 if (bedrooms) query += `&bedrooms=${bedrooms}`;
 
-                console.log('API URL:', `${API_URL}?${query}`);
+                console.log('API URL:', `${API_BASE_URL}/properties?${query}`);
 
-                const res = await fetch(`${API_URL}?${query}`);
+                const res = await authFetch(`${API_BASE_URL}/properties?${query}`);
                 const json = await res.json();
                 
                 console.log('Response:', json);
@@ -619,7 +631,7 @@
                         formData.append('file', file);
                         
                         try {
-                            const res = await fetch('http://localhost:8080/upload', {
+                            const res = await authFetch(`${API_BASE_URL}/upload`, {
                                 method: 'POST',
                                 body: formData
                             });
@@ -675,9 +687,8 @@
 
                 console.log('Sending data:', data);
 
-                const response = await fetch(API_URL, {
+                const response = await authFetch(`${API_BASE_URL}/properties`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(data)
                 });
 
@@ -700,9 +711,8 @@
                 if (additionalPhotoPaths.length > 0 && result.data && result.data.id) {
                     for (const photoPath of additionalPhotoPaths) {
                         try {
-                            await fetch('http://localhost:8080/property-photos', {
+                            await authFetch(`${API_BASE_URL}/property-photos`, {
                                 method: 'POST',
-                                headers: {'Content-Type': 'application/json'},
                                 body: JSON.stringify({
                                     property_id: result.data.id,
                                     photo_path: photoPath
@@ -744,7 +754,7 @@
 
         async function hapusRumah(id) {
             if(confirm('Yakin ingin menghapus listing ini?')) {
-                await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+                await authFetch(`${API_BASE_URL}/properties/${id}`, { method: 'DELETE' });
                 loadData(currentPage);
             }
         }
@@ -765,7 +775,7 @@
         async function editRumah(id) {
             try {
                 console.log('Fetching property data for ID:', id);
-                const res = await fetch(`${API_URL}/${id}`);
+                const res = await authFetch(`${API_BASE_URL}/properties/${id}`);
                 console.log('Response status:', res.status);
                 
                 if (!res.ok) {
@@ -843,7 +853,7 @@
                 formData.append('file', photoInput.files[0]);
 
                 try {
-                    const res = await fetch('http://localhost:8080/upload', {
+                    const res = await authFetch(`${API_BASE_URL}/upload`, {
                         method: 'POST',
                         body: formData
                     });
@@ -866,7 +876,7 @@
                     formData.append('file', file);
                     
                     try {
-                        const res = await fetch('http://localhost:8080/upload', {
+                        const res = await authFetch(`${API_BASE_URL}/upload`, {
                             method: 'POST',
                             body: formData
                         });
@@ -904,16 +914,15 @@
             }
 
             try {
-                await fetch(`${API_URL}/${currentEditId}`, {
+                await authFetch(`${API_BASE_URL}/properties/${currentEditId}`, {
                     method: 'PUT',
-                    headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(data)
                 });
 
                 // Delete removed additional photos
                 for (const photoId of editAdditionalPhotosToDelete) {
                     try {
-                        await fetch(`http://localhost:8080/property-photos/${photoId}`, {
+                        await authFetch(`${API_BASE_URL}/property-photos/${photoId}`, {
                             method: 'DELETE'
                         });
                         console.log('Deleted photo:', photoId);
@@ -925,9 +934,8 @@
                 // Add new additional photos
                 for (const photoPath of editNewAdditionalPhotos) {
                     try {
-                        await fetch('http://localhost:8080/property-photos', {
+                        await authFetch(`${API_BASE_URL}/property-photos`, {
                             method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
                             body: JSON.stringify({
                                 property_id: currentEditId,
                                 photo_path: photoPath
@@ -962,7 +970,7 @@
             container.innerHTML = '';
 
             try {
-                const res = await fetch(`http://localhost:8080/property-photos/${propertyId}`);
+                const res = await authFetch(`${API_BASE_URL}/property-photos/${propertyId}`);
                 const json = await res.json();
                 const photos = json.data || [];
 
@@ -1102,7 +1110,7 @@
         try {
             document.body.style.overflow = 'hidden';
             
-            const res = await fetch(`${API_URL}/${id}`);
+            const res = await authFetch(`${API_BASE_URL}/properties/${id}`);
             const json = await res.json();
             
             if (!json.data) {
@@ -1113,7 +1121,7 @@
             
             // Fetch additional photos
             console.log('Fetching additional photos for property:', id);
-            const photosRes = await fetch(`http://localhost:8080/property-photos/${id}`);
+            const photosRes = await authFetch(`${API_BASE_URL}/property-photos/${id}`);
             const photosJson = await photosRes.json();
             console.log('Additional photos response:', photosJson);
             const additionalPhotos = photosJson.data || [];
