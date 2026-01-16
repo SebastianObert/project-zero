@@ -416,6 +416,61 @@
         let currentFilters = {};
         let additionalPhotoPaths = []; // Array untuk menyimpan path foto tambahan
 
+        // Toast Notification System
+        function showToast(message, type = 'info', duration = 4000) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const id = 'toast-' + Date.now();
+            toast.id = id;
+            toast.className = 'toast-notification pointer-events-auto';
+            
+            // Icon berdasarkan type
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+            
+            // Color classes berdasarkan type
+            const typeClasses = {
+                success: 'toast-success',
+                error: 'toast-error',
+                warning: 'toast-warning',
+                info: 'toast-info'
+            };
+            
+            toast.classList.add(typeClasses[type] || typeClasses.info);
+            
+            toast.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">${icons[type] || icons.info}</span>
+                    <p class="flex-1 text-sm font-medium">${message}</p>
+                    <button onclick="removeToast('${id}')" class="text-white/70 hover:text-white transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            // Auto remove
+            setTimeout(() => removeToast(id), duration);
+        }
+        
+        function removeToast(id) {
+            const toast = document.getElementById(id);
+            if (toast) {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }
+        }
+
         // Cek login saat halaman load
         window.addEventListener('DOMContentLoaded', () => {
             if (!requireAuth()) {
@@ -564,16 +619,16 @@
                     return true;
                 } else {
                     console.error("Response tidak ada photo_path:", data);
-                    alert("❌ Gagal upload foto: " + (data.error || "Tidak ada response"));
+                    showToast("Gagal upload foto: " + (data.error || "Tidak ada response"), 'error', 5000);
                     return false;
                 }
             } catch (e) {
                 if (e.name === 'AbortError') {
                     console.error("Upload timeout");
-                    alert("❌ Upload foto timeout (lebih dari 60 detik). Periksa koneksi internet Anda.");
+                    showToast("Upload foto timeout (lebih dari 60 detik). Periksa koneksi internet Anda.", 'error', 5000);
                 } else {
                     console.error("Gagal upload foto", e);
-                    alert("❌ Gagal upload foto ke cloud: " + e.message);
+                    showToast("Gagal upload foto ke cloud: " + e.message, 'error', 5000);
                 }
                 return false;
             }
@@ -711,27 +766,27 @@
                 // Validasi field required
                 if (!document.getElementById('title').value || document.getElementById('title').value.length < 3) {
                     hideLoading();
-                    alert("❌ Judul minimal 3 karakter!");
+                    showToast("Judul minimal 3 karakter!", 'warning');
                     return;
                 }
                 if (!priceRaw || parseInt(priceRaw) <= 0) {
                     hideLoading();
-                    alert("❌ Harga harus lebih dari 0!");
+                    showToast("Harga harus lebih dari 0!", 'warning');
                     return;
                 }
                 if (!document.getElementById('land_size').value || parseInt(document.getElementById('land_size').value) <= 0) {
                     hideLoading();
-                    alert("❌ Luas Tanah harus lebih dari 0!");
+                    showToast("Luas Tanah harus lebih dari 0!", 'warning');
                     return;
                 }
                 if (!document.getElementById('building_size').value || parseInt(document.getElementById('building_size').value) <= 0) {
                     hideLoading();
-                    alert("❌ Luas Bangunan harus lebih dari 0!");
+                    showToast("Luas Bangunan harus lebih dari 0!", 'warning');
                     return;
                 }
                 if (!document.getElementById('address').value) {
                     hideLoading();
-                    alert("❌ Alamat wajib diisi!");
+                    showToast("Alamat wajib diisi!", 'warning');
                     return;
                 }
 
@@ -824,7 +879,7 @@
                                 uploadPromises.length = 0; // Clear array
                             } catch (err) {
                                 hideLoading();
-                                alert(`❌ ${err.message}`);
+                                showToast(err.message, 'error', 5000);
                                 return;
                             }
                         }
@@ -871,10 +926,10 @@
                     hideLoading();
                     console.error('Server error:', result);
                     if (result.fields) {
-                        const errors = Object.entries(result.fields).map(([field, msg]) => `${field}: ${msg}`).join('\n');
-                        alert(`❌ Validasi gagal:\n${errors}`);
+                        const errors = Object.entries(result.fields).map(([field, msg]) => `${field}: ${msg}`).join(', ');
+                        showToast(`Validasi gagal: ${errors}`, 'error', 6000);
                     } else {
-                        alert(`❌ Gagal menyimpan: ${result.error || result.message || 'Unknown error'}`);
+                        showToast(`Gagal menyimpan: ${result.error || result.message || 'Unknown error'}`, 'error', 5000);
                     }
                     return;
                 }
@@ -911,7 +966,7 @@
                 await new Promise(resolve => setTimeout(resolve, 500));
                 
                 hideLoading();
-                alert('✅ Listing properti berhasil disimpan!');
+                showToast('Listing properti berhasil disimpan!', 'success', 4000);
                 
                 document.getElementById('title').value = "";
                 document.getElementById('description').value = "";
@@ -936,7 +991,7 @@
             } catch (e) {
                 hideLoading();
                 console.error('Error saat menyimpan:', e);
-                alert('❌ Terjadi error: ' + e.message);
+                showToast('Terjadi error: ' + e.message, 'error', 5000);
             }
         }
 
@@ -1036,7 +1091,7 @@
                 console.log('Edit modal opened successfully');
             } catch (e) {
                 console.error("Gagal load data untuk edit:", e);
-                alert("Gagal memuat data properti: " + e.message);
+                showToast("Gagal memuat data properti: " + e.message, 'error', 5000);
             }
         }
 
@@ -1073,7 +1128,7 @@
                     }
                 } catch (e) {
                     console.error("Gagal upload foto baru", e);
-                    alert("Gagal upload foto");
+                    showToast("Gagal upload foto", 'error');
                     return;
                 }
             }
@@ -1119,7 +1174,7 @@
             };
 
             if (!data.title || !data.price) {
-                alert("Judul dan Harga wajib diisi!");
+                showToast("Judul dan Harga wajib diisi!", 'warning');
                 return;
             }
 
@@ -1158,11 +1213,11 @@
                 }
 
                 closeEditModal();
-                alert('Listing berhasil diupdate!');
+                showToast('Listing berhasil diupdate!', 'success');
                 await loadData(currentPage);
             } catch (e) {
                 console.error("Gagal update listing", e);
-                alert("Gagal update listing");
+                showToast("Gagal update listing", 'error');
             }
         }
 
@@ -1438,7 +1493,7 @@
             document.getElementById('detail-modal').classList.remove('hidden');
         } catch (e) {
             console.error('Failed to load property detail:', e);
-            alert('\u274c Gagal memuat detail properti');
+            showToast('Gagal memuat detail properti', 'error');
         }
     }
 
@@ -1501,5 +1556,8 @@
         });
     });
     </script>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-[9999] flex flex-col gap-3 pointer-events-none"></div>
 </body>
 </html>
