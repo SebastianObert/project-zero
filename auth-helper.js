@@ -29,6 +29,7 @@ function getAuthHeaders(includeContentType = true) {
 // Fetch dengan auth
 async function authFetch(url, options = {}) {
     if (!isLoggedIn()) {
+        console.error('❌ Not authenticated');
         window.location.href = '/login.html';
         throw new Error('Not authenticated');
     }
@@ -43,13 +44,22 @@ async function authFetch(url, options = {}) {
     
     headers['Authorization'] = `Bearer ${token}`;
     
+    console.log(`🌐 ${options.method || 'GET'} ${url}`);
+    console.log('📤 Headers:', headers);
+    if (options.body && !(options.body instanceof FormData)) {
+        console.log('📦 Body:', options.body.substring(0, 200) + '...');
+    }
+    
     const response = await fetch(url, {
         ...options,
         headers
     });
     
+    console.log(`📥 Response: ${response.status} ${response.statusText}`);
+    
     // Jika unauthorized, redirect ke login
     if (response.status === 401) {
+        console.error('❌ Unauthorized - redirecting to login');
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/login.html';

@@ -307,7 +307,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold uppercase text-gray-600 mb-2 tracking-wider">Harga (Rp)</label>
-                    <input id="edit-price" type="text" class="w-full input-modern p-3 rounded-xl" oninput="formatCurrency(this)">
+                    <input id="edit-price" type="text" class="w-full input-modern p-3 rounded-xl" oninput="formatEditCurrency(this)">
                     <input id="edit-price-raw" type="hidden">
                 </div>
                 <div>
@@ -537,6 +537,14 @@
             let formatted = new Intl.NumberFormat('id-ID').format(value);
             input.value = formatted;
             document.getElementById('price-raw').value = value;
+        }
+
+        // Format currency untuk edit modal
+        function formatEditCurrency(input) {
+            let value = input.value.replace(/\D/g, '');
+            let formatted = new Intl.NumberFormat('id-ID').format(value);
+            input.value = formatted;
+            document.getElementById('edit-price-raw').value = value;
         }
 
         // Compress image sebelum upload untuk mempercepat
@@ -1109,7 +1117,9 @@
         async function submitEditRumah() {
             if (!currentEditId) return;
 
-            const priceRaw = document.getElementById('edit-price-raw').value;
+            // Ambil nilai price dari edit-price dan clean up
+            const priceInput = document.getElementById('edit-price').value.replace(/\D/g, '');
+            const priceRaw = priceInput || document.getElementById('edit-price-raw').value;
 
             // Upload foto utama baru (sama seperti sebelumnya)
             const photoInput = document.getElementById('edit-photo');
@@ -1157,21 +1167,23 @@
             }
 
             const data = {
-                title: document.getElementById('edit-title').value,
-                description: document.getElementById('edit-description').value,
-                price: parseInt(priceRaw || 0),
+                title: document.getElementById('edit-title').value.trim(),
+                description: document.getElementById('edit-description').value.trim(),
+                price: parseInt(priceRaw) || 0,
                 listing_type: document.getElementById('edit-type').value,
-                land_size: parseInt(document.getElementById('edit-land_size').value || 0),
-                building_size: parseInt(document.getElementById('edit-building_size').value || 0),
-                bedrooms: parseInt(document.getElementById('edit-bedrooms').value || 0),
-                bathrooms: parseInt(document.getElementById('edit-bathrooms').value || 0),
-                floors: parseInt(document.getElementById('edit-floors').value || 1),
+                land_size: parseInt(document.getElementById('edit-land_size').value) || 0,
+                building_size: parseInt(document.getElementById('edit-building_size').value) || 0,
+                bedrooms: parseInt(document.getElementById('edit-bedrooms').value) || 0,
+                bathrooms: parseInt(document.getElementById('edit-bathrooms').value) || 0,
+                floors: parseInt(document.getElementById('edit-floors').value) || 1,
                 certificate: document.getElementById('edit-certificate').value,
-                electricity: parseInt(document.getElementById('edit-electricity').value || 0),
-                water_source: document.getElementById('edit-water_source').value,
-                address: document.getElementById('edit-address').value,
+                electricity: parseInt(document.getElementById('edit-electricity').value) || 0,
+                water_source: document.getElementById('edit-water_source').value || '',
+                address: document.getElementById('edit-address').value.trim(),
                 photo_path: currentEditPhotoPath
             };
+
+            console.log('Sending update data:', data);
 
             if (!data.title || !data.price) {
                 showToast("Judul dan Harga wajib diisi!", 'warning');
@@ -1179,10 +1191,19 @@
             }
 
             try {
-                await authFetch(`${API_BASE_URL}/properties/${currentEditId}`, {
+                const response = await authFetch(`${API_BASE_URL}/properties/${currentEditId}`, {
                     method: 'PUT',
                     body: JSON.stringify(data)
                 });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Update failed:', errorData);
+                    throw new Error(errorData.error || errorData.message || 'Update failed');
+                }
+                
+                const result = await response.json();
+                console.log('Update response:', result);
 
                 // Delete removed additional photos
                 for (const photoId of editAdditionalPhotosToDelete) {

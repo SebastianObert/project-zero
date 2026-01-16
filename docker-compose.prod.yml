@@ -1,0 +1,52 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: project-zero-app
+    ports:
+      - "443:443"   # HTTPS
+      - "80:80"     # HTTP (untuk redirect ke HTTPS)
+    environment:
+      - ENVIRONMENT=production
+      - PORT=443
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=${DB_PORT}
+      - DB_SSL_MODE=require
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - JWT_SECRET=${JWT_SECRET}
+      - TLS_CERT_FILE=/etc/ssl/certs/cert.pem
+      - TLS_KEY_FILE=/etc/ssl/private/key.pem
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+    volumes:
+      # Mount SSL certificates
+      - ./certs/cert.pem:/etc/ssl/certs/cert.pem:ro
+      - ./certs/key.pem:/etc/ssl/private/key.pem:ro
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Optional: Nginx reverse proxy untuk handle SSL termination
+  nginx:
+    image: nginx:alpine
+    container_name: project-zero-nginx
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/ssl:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

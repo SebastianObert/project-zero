@@ -79,13 +79,34 @@ func (r *PropertyRepository) UpdateProperty(id uint, property *models.Property) 
 		return nil, err
 	}
 
-	// Update fields
-	property.ID = id
-	if err := r.db.Save(property).Error; err != nil {
+	// Update all fields using Updates with map to handle zero values
+	updates := map[string]interface{}{
+		"title":         property.Title,
+		"description":   property.Description,
+		"price":         property.Price,
+		"listing_type":  property.ListingType,
+		"land_size":     property.LandSize,
+		"building_size": property.BuildingSize,
+		"bedrooms":      property.Bedrooms,
+		"bathrooms":     property.Bathrooms,
+		"floors":        property.Floors,
+		"certificate":   property.Certificate,
+		"electricity":   property.Electricity,
+		"water_source":  property.WaterSource,
+		"address":       property.Address,
+		"photo_path":    property.PhotoPath,
+	}
+
+	if err := r.db.Model(&existing).Updates(updates).Error; err != nil {
 		return nil, err
 	}
 
-	return property, nil
+	// Fetch the updated record
+	if err := r.db.First(&existing, id).Error; err != nil {
+		return nil, err
+	}
+
+	return &existing, nil
 }
 
 func (r *PropertyRepository) DeleteProperty(id uint) error {
