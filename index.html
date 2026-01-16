@@ -278,7 +278,9 @@
         </div>
     </footer>   
 
-    <!-- Detail Modal -->
+    <!-- Loading Modal akan dimuat dari loading-modal.html -->
+    <div id="loading-modal-container"></div>
+
     <div id="detail-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
         <div class="card-glow p-8 rounded-3xl max-w-4xl w-full max-h-[85vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-6">
@@ -287,7 +289,6 @@
             </div>
             
             <div id="detail-content" class="space-y-6">
-                <!-- Content will be loaded dynamically -->
             </div>
         </div>
     </div>
@@ -402,6 +403,14 @@
         
 
     <script>
+        // Load loading modal component
+        fetch('loading-modal.html')
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('loading-modal-container').innerHTML = html;
+            })
+            .catch(err => console.error('Failed to load loading modal:', err));
+
         let currentPhotoPath = '';
         let currentPage = 1;
         let currentFilters = {};
@@ -428,12 +437,28 @@
             const img = document.getElementById(imgId);
             
             if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+                
+                // Warning jika file > 10MB
+                if (file.size > 10 * 1024 * 1024) {
+                    const proceed = confirm(
+                        `⚠️ Ukuran foto ${fileSizeMB}MB cukup besar.\n` +
+                        `Upload akan di-compress otomatis tapi mungkin memakan waktu.\n\n` +
+                        `Lanjutkan?`
+                    );
+                    if (!proceed) {
+                        input.value = '';
+                        return;
+                    }
+                }
+                
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     img.src = e.target.result;
                     preview.classList.remove('hidden');
                 };
-                reader.readAsDataURL(input.files[0]);
+                reader.readAsDataURL(file);
             }
         }
 
@@ -459,7 +484,49 @@
             document.getElementById('price-raw').value = value;
         }
 
-        // Upload foto ke server terlebih dahulu
+        // Compress image sebelum upload untuk mempercepat
+        async function compressImage(file, maxSizeMB = 1) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        // Resize jika terlalu besar (max 1280px untuk kompresi lebih baik)
+                        const maxDimension = 1280;
+                        if (width > maxDimension || height > maxDimension) {
+                            if (width > height) {
+                                height = (height / width) * maxDimension;
+                                width = maxDimension;
+                            } else {
+                                width = (width / height) * maxDimension;
+                                height = maxDimension;
+                            }
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Compress dengan quality 0.6 untuk file lebih kecil & upload lebih cepat
+                        canvas.toBlob((blob) => {
+                            resolve(new File([blob], file.name, {
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
+                            }));
+                        }, 'image/jpeg', 0.6);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Upload foto ke server dengan compression dan timeout
         async function uploadPhoto() {
             const photoInput = document.getElementById('photo');
             if (!photoInput.files || !photoInput.files[0]) {
@@ -467,27 +534,47 @@
                 return true;
             }
 
+            const originalFile = photoInput.files[0];
+            console.log('Original file size:', (originalFile.size / 1024 / 1024).toFixed(2), 'MB');
+            
+            // Compress image
+            const compressedFile = await compressImage(originalFile);
+            console.log('Compressed file size:', (compressedFile.size / 1024 / 1024).toFixed(2), 'MB');
+
             const formData = new FormData();
-            formData.append('file', photoInput.files[0]);
+            formData.append('file', compressedFile);
 
             try {
+                // Tambah timeout 60 detik untuk koneksi lambat
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 60000);
+                
                 const res = await authFetch(`${API_BASE_URL}/upload`, {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    signal: controller.signal
                 });
+                
+                clearTimeout(timeoutId);
                 const data = await res.json();
+                
                 if (data.photo_path) {
                     currentPhotoPath = data.photo_path;
                     console.log('Upload berhasil:', currentPhotoPath);
                     return true;
                 } else {
                     console.error("Response tidak ada photo_path:", data);
-                    alert("Gagal upload foto: " + (data.error || "Tidak ada response"));
+                    alert("❌ Gagal upload foto: " + (data.error || "Tidak ada response"));
                     return false;
                 }
             } catch (e) {
-                console.error("Gagal upload foto", e);
-                alert("Gagal upload foto: " + e.message);
+                if (e.name === 'AbortError') {
+                    console.error("Upload timeout");
+                    alert("❌ Upload foto timeout (lebih dari 60 detik). Periksa koneksi internet Anda.");
+                } else {
+                    console.error("Gagal upload foto", e);
+                    alert("❌ Gagal upload foto ke cloud: " + e.message);
+                }
                 return false;
             }
         }
@@ -532,10 +619,10 @@
                 
                 tabel.innerHTML = data.map(r => `
                     <tr class="table-row-hover">
-                        <td class="p-6">
+                        <td class="p-6" style="max-width: 350px;">
                             ${r.photo_path ? `<img src="${r.photo_path}?t=${Date.now()}" alt="Foto" class="w-20 h-20 rounded-lg object-cover mb-2 border border-gray-200 cursor-pointer" onclick="viewPropertyDetail(${r.id})">` : '<div class="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">No Foto</div>'}
                             <div class="font-bold text-gray-900 text-sm cursor-pointer hover:text-blue-600 transition-colors" onclick="viewPropertyDetail(${r.id})">${r.title}</div>
-                            <div class="text-xs text-gray-500 mt-2">📍 ${r.address || 'Alamat belum diisi'}</div>
+                            <div class="text-xs text-gray-500 mt-2 break-words" style="word-wrap: break-word; overflow-wrap: break-word; max-width: 300px;">📍 ${r.address || 'Alamat belum diisi'}</div>
                             <div class="text-[11px] text-blue-600 mt-2 font-bold uppercase tracking-wider">${r.certificate} Certificate</div>
                         </td>
                         <td class="p-6 text-center">
@@ -615,36 +702,143 @@
 
         async function simpanRumah() {
             try {
+                // Show loading modal
+                showLoading();
+                updateProgress(5, 'Memvalidasi data...');
+                
                 const priceRaw = document.getElementById('price-raw').value || document.getElementById('price').value.replace(/\D/g, '');
                 
-                // Upload foto utama (sama seperti sebelumnya)
-                const photoUploaded = await uploadPhoto();
-                if (!photoUploaded && document.getElementById('photo').files && document.getElementById('photo').files[0]) {
-                    return; 
+                // Validasi field required
+                if (!document.getElementById('title').value || document.getElementById('title').value.length < 3) {
+                    hideLoading();
+                    alert("❌ Judul minimal 3 karakter!");
+                    return;
+                }
+                if (!priceRaw || parseInt(priceRaw) <= 0) {
+                    hideLoading();
+                    alert("❌ Harga harus lebih dari 0!");
+                    return;
+                }
+                if (!document.getElementById('land_size').value || parseInt(document.getElementById('land_size').value) <= 0) {
+                    hideLoading();
+                    alert("❌ Luas Tanah harus lebih dari 0!");
+                    return;
+                }
+                if (!document.getElementById('building_size').value || parseInt(document.getElementById('building_size').value) <= 0) {
+                    hideLoading();
+                    alert("❌ Luas Bangunan harus lebih dari 0!");
+                    return;
+                }
+                if (!document.getElementById('address').value) {
+                    hideLoading();
+                    alert("❌ Alamat wajib diisi!");
+                    return;
                 }
 
-                // Upload foto tambahan dari array selectedAdditionalFiles
-                additionalPhotoPaths = []; // Reset
-                if (selectedAdditionalFiles.length > 0) {
-                    for (let file of selectedAdditionalFiles) {
-                        const formData = new FormData();
-                        formData.append('file', file);
-                        
-                        try {
-                            const res = await authFetch(`${API_BASE_URL}/upload`, {
-                                method: 'POST',
-                                body: formData
-                            });
-                            const data = await res.json();
-                            if (data.photo_path) {
-                                additionalPhotoPaths.push(data.photo_path);
-                                console.log('Additional photo uploaded:', data.photo_path);
+                updateProgress(10, 'Validasi selesai...');
+                
+                // Upload foto utama
+                const photoInput = document.getElementById('photo');
+                let mainPhotoProgress = 15;
+                
+                if (photoInput.files && photoInput.files[0]) {
+                    updateProgress(mainPhotoProgress, 'Mengupload foto utama...');
+                    const photoUploaded = await uploadPhoto();
+                    if (!photoUploaded) {
+                        hideLoading();
+                        return;
+                    }
+                    mainPhotoProgress = 35;
+                    updateProgress(mainPhotoProgress, 'Foto utama berhasil diupload');
+                } else {
+                    currentPhotoPath = '';
+                    mainPhotoProgress = 35;
+                    updateProgress(mainPhotoProgress, 'Melewati upload foto utama...');
+                }
+
+                // Upload foto tambahan (parallel upload lebih cepat)
+                additionalPhotoPaths = [];
+                let additionalProgress = mainPhotoProgress;
+                const totalAdditionalPhotos = selectedAdditionalFiles.length;
+                
+                if (totalAdditionalPhotos > 0) {
+                    updateProgress(additionalProgress, `Mengcompress ${totalAdditionalPhotos} foto...`);
+                    
+                    // Compress semua foto dulu
+                    const compressedFiles = await Promise.all(
+                        selectedAdditionalFiles.map(file => compressImage(file))
+                    );
+                    
+                    additionalProgress = 40;
+                    updateProgress(additionalProgress, 'Mengupload foto tambahan...');
+                    
+                    // Upload parallel (max 3 concurrent uploads)
+                    const uploadPromises = [];
+                    const progressPerPhoto = 25 / totalAdditionalPhotos;
+                    
+                    for (let i = 0; i < compressedFiles.length; i++) {
+                        const uploadPromise = (async (index) => {
+                            const file = compressedFiles[index];
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            
+                            try {
+                                // Timeout 60 detik per foto untuk koneksi lambat
+                                const controller = new AbortController();
+                                const timeoutId = setTimeout(() => controller.abort(), 60000);
+                                
+                                const res = await authFetch(`${API_BASE_URL}/upload`, {
+                                    method: 'POST',
+                                    body: formData,
+                                    signal: controller.signal
+                                });
+                                
+                                clearTimeout(timeoutId);
+                                const data = await res.json();
+                                
+                                if (data.photo_path) {
+                                    console.log(`Foto ${index + 1} berhasil:`, data.photo_path);
+                                    updateProgress(
+                                        40 + (progressPerPhoto * (index + 1)),
+                                        `Upload foto ${index + 1}/${totalAdditionalPhotos} selesai`
+                                    );
+                                    return data.photo_path;
+                                } else {
+                                    throw new Error(data.error || 'Response tidak valid');
+                                }
+                            } catch (err) {
+                                if (err.name === 'AbortError') {
+                                    throw new Error(`Timeout upload foto ${index + 1}`);
+                                }
+                                throw new Error(`Gagal upload foto ${index + 1}: ${err.message}`);
                             }
-                        } catch (err) {
-                            console.error('Failed to upload additional photo:', err);
+                        })(i);
+                        
+                        uploadPromises.push(uploadPromise);
+                        
+                        // Upload max 3 concurrent
+                        if (uploadPromises.length >= 3 || i === compressedFiles.length - 1) {
+                            try {
+                                const results = await Promise.all(uploadPromises);
+                                additionalPhotoPaths.push(...results);
+                                uploadPromises.length = 0; // Clear array
+                            } catch (err) {
+                                hideLoading();
+                                alert(`❌ ${err.message}`);
+                                return;
+                            }
                         }
                     }
+                    
+                    additionalProgress = 65;
+                    updateProgress(additionalProgress, 'Semua foto berhasil diupload ✅');
+                } else {
+                    additionalProgress = 65;
+                    updateProgress(additionalProgress, 'Melewati upload foto tambahan...');
                 }
+                
+                // Menyimpan data properti
+                updateProgress(70, 'Menyimpan data properti...');
                 
                 const data = {
                     title: document.getElementById('title').value,
@@ -663,28 +857,6 @@
                     photo_path: currentPhotoPath
                 };
 
-                // Validasi field required saja
-                if (!data.title || data.title.length < 3) {
-                    alert("❌ Judul minimal 3 karakter!");
-                    return;
-                }
-                if (!data.price || data.price <= 0) {
-                    alert("❌ Harga harus lebih dari 0!");
-                    return;
-                }
-                if (!data.land_size || data.land_size <= 0) {
-                    alert("❌ Luas Tanah harus lebih dari 0!");
-                    return;
-                }
-                if (!data.building_size || data.building_size <= 0) {
-                    alert("❌ Luas Bangunan harus lebih dari 0!");
-                    return;
-                }
-                if (!data.address) {
-                    alert("❌ Alamat wajib diisi!");
-                    return;
-                }
-
                 console.log('Sending data:', data);
 
                 const response = await authFetch(`${API_BASE_URL}/properties`, {
@@ -696,9 +868,9 @@
                 console.log('Response:', result);
 
                 if (!response.ok) {
+                    hideLoading();
                     console.error('Server error:', result);
                     if (result.fields) {
-                        // Show validation errors
                         const errors = Object.entries(result.fields).map(([field, msg]) => `${field}: ${msg}`).join('\n');
                         alert(`❌ Validasi gagal:\n${errors}`);
                     } else {
@@ -707,9 +879,19 @@
                     return;
                 }
 
-                // Save additional photos if any
+                updateProgress(85, 'Data properti tersimpan');
+
+                // Simpan foto tambahan ke database
                 if (additionalPhotoPaths.length > 0 && result.data && result.data.id) {
-                    for (const photoPath of additionalPhotoPaths) {
+                    const progressPerSave = 10 / additionalPhotoPaths.length;
+                    
+                    for (let i = 0; i < additionalPhotoPaths.length; i++) {
+                        const photoPath = additionalPhotoPaths[i];
+                        updateProgress(
+                            85 + (progressPerSave * i), 
+                            `Menyimpan referensi foto ${i + 1}...`
+                        );
+                        
                         try {
                             await authFetch(`${API_BASE_URL}/property-photos`, {
                                 method: 'POST',
@@ -724,6 +906,11 @@
                     }
                 }
 
+                updateProgress(100, 'Selesai! ✅');
+                
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                hideLoading();
                 alert('✅ Listing properti berhasil disimpan!');
                 
                 document.getElementById('title').value = "";
@@ -745,11 +932,34 @@
                 additionalPhotoPaths = [];
                 selectedAdditionalFiles = [];
                 
-                loadData(currentPage); 
+                loadData(currentPage);
             } catch (e) {
+                hideLoading();
                 console.error('Error saat menyimpan:', e);
                 alert('❌ Terjadi error: ' + e.message);
             }
+        }
+
+        // Helper functions untuk loading modal
+        function showLoading() {
+            document.getElementById('loading-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+            updateProgress(0, 'Mempersiapkan...');
+        }
+
+        function updateProgress(percentage, status) {
+            const progressBar = document.getElementById('progress-bar');
+            const progressPercentage = document.getElementById('progress-percentage');
+            const loadingStatus = document.getElementById('loading-status');
+            
+            progressBar.style.width = percentage + '%';
+            progressPercentage.textContent = Math.round(percentage) + '%';
+            loadingStatus.textContent = status;
         }
 
         async function hapusRumah(id) {

@@ -1,4 +1,4 @@
-// auth-helper.js - Helper functions untuk authentication
+// Helper functions untuk authentication
 const API_BASE_URL = 'http://localhost:8080';
 
 // Cek apakah user sudah login

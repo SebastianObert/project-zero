@@ -8,6 +8,35 @@
     --color-warning: #f59e0b;
 }
 
+/* Loading Progress Bar Animations */
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(139, 92, 246, 0.8);
+    }
+}
+
+.shimmer-effect {
+    animation: shimmer 1.5s infinite;
+}
+
+.progress-bar-animated {
+    animation: pulse-glow 2s ease-in-out infinite;
+    position: relative;
+    overflow: hidden;
+}
+
 * {
     margin: 0;
     padding: 0;

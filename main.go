@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
+	"time"
 
 	"project-zero/internal/models"
 	"project-zero/pkg/database"
@@ -33,7 +35,7 @@ func initDB() {
 	}
 	fmt.Println("✅ Berhasil terhubung ke Neon Database!")
 
-	// Buat/update tabel otomatis - TAMBAHKAN models.User
+	// Buat/update tabel otomatis
 	db.AutoMigrate(&models.User{}, &models.Property{}, &models.PropertyPhoto{})
 
 	// Initialize Cloudinary
@@ -73,8 +75,8 @@ func main() {
 
 	r := gin.Default()
 
-	// Set max multipart memory untuk support file besar (100MB)
-	r.MaxMultipartMemory = 100 * 1024 * 1024 // 100MB
+	// Set max multipart memory untuk support file besar (50MB lebih aman)
+	r.MaxMultipartMemory = 50 * 1024 * 1024 // 50MB
 
 	// Pasang middleware CORS biar Frontend (HTML) bisa akses Backend
 	r.Use(corsMiddleware())
@@ -84,6 +86,7 @@ func main() {
 	r.StaticFile("/index.html", "./index.html")
 	r.StaticFile("/login.html", "./login.html")
 	r.StaticFile("/signup.html", "./signup.html")
+	r.StaticFile("/loading-modal.html", "./loading-modal.html")
 	r.StaticFile("/styles.css", "./styles.css")
 	r.StaticFile("/auth-helper.js", "./auth-helper.js")
 
@@ -117,5 +120,18 @@ func main() {
 		protected.DELETE("/property-photos/:id", propertyPhotoHandler.DeletePropertyPhoto)
 	}
 
-	r.Run(":8080")
+	// Create HTTP server with custom timeouts
+	srv := &http.Server{
+		Addr:           ":8080",
+		Handler:        r,
+		ReadTimeout:    90 * time.Second, // Timeout untuk baca request
+		WriteTimeout:   90 * time.Second, // Timeout untuk kirim response
+		MaxHeaderBytes: 1 << 20,          // 1 MB
+	}
+
+	fmt.Println("🚀 Server berjalan di http://localhost:8080")
+
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		panic(fmt.Sprintf("❌ Gagal start server: %v", err))
+	}
 }
